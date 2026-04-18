@@ -1,5 +1,4 @@
-#import "@preview/onyx-itu-unofficial:0.1.0": academic-document
-#import "@preview/subpar:0.1.1"
+#import "lib.typ": academic-document
 
 #set page(fill: rgb("#ddd"))
 #show raw: it => {
