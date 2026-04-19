@@ -1,6 +1,6 @@
 #import "lib.typ": academic-document
 
-#set page(fill: rgb("#ddd"))
+#set page(fill: rgb("#fff"))
 #show raw: it => {
   set text(size: 1.1em)
   if it.lang == none {
@@ -9,6 +9,11 @@
     it
   }
 }
+
+
+
+
+
 
 #let codeblock(body) = {
   show raw: it => {
@@ -21,14 +26,16 @@
     )
   }
   block(
-    stroke: 3.0pt + rgb("#555555"),
-    fill: rgb("#b0aaaa"),
+    stroke: 1.0pt + rgb("#e1e1e1"),
+    fill: rgb("#eeeeee"),
     radius: 6pt,
     inset: 1em,
     clip: true,
     body,
   )
 }
+
+``
 
 #set text(font: "New Computer Modern", size: 12pt)
 // #context text.size
@@ -38,29 +45,13 @@
   course-name: "Introduction to Communications",
   course-code: "EECG232",
   // document-type: "Portfolio Thesis",
-  title: "Software Radio
+  title: "koftware Radio
   Random Process Analysis",
 
   authors: (
     (
-      name: "Moneer Mohammed Ali",
-      code: "91241076",
-    ),
-    (
-      name: "Youssef Haggag Fawzy ",
-      code: "91240871",
-    ),
-    (
-      name: "Moneer Mohammed Ali",
-      code: "91241076",
-    ),
-    (
-      name: "Youssef Haggag Fawzy ",
-      code: "91240871",
-    ),
-    (
-      name: "Moneer Mohammed Ali",
-      code: "91241076",
+      name: "Team 11",
+      code: "",
     ),
   ),
   author-columns: 2,
