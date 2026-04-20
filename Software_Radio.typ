@@ -17,22 +17,35 @@
 
 #let codeblock(body) = {
   show raw: it => {
-    grid(
-      rows: 1.2em, columns: (auto, auto), column-gutter: 1em, ..it
-        .lines
-        .enumerate()
-        .map(((i, line)) => (text(fill: navy)[#(i + 1)], line))
-        .flatten()
+    block(
+      stroke: 1.0pt + rgb("#EEE"),
+      fill: rgb("#f3f5f6"),
+      radius: 3pt,
+      clip: true,
+      width: 100%,
+      {
+        table(
+          columns: (auto, 1fr),
+          stroke: none,
+          column-gutter: 0pt,
+          inset: 0.8em,
+          // sidebar background
+          fill: (col, row) => if col == 0 { rgb("#eef0f2") },
+          
+          // COLUMN 1: Numbers
+          align(right, text(fill: navy.lighten(20%), weight: "bold")[
+            #it.lines.enumerate().map(((i, _)) => [#(i + 1)]).join([\ ])
+          ]),
+          
+          // COLUMN 2: Code
+          align(left)[
+            #it.lines.map(l => l).join([\ ])
+          ]
+        )
+      }
     )
   }
-  block(
-    stroke: 1.0pt + rgb("#e1e1e1"),
-    fill: rgb("#eeeeee"),
-    radius: 6pt,
-    inset: 1em,
-    clip: true,
-    body,
-  )
+  body
 }
 
 ``
@@ -45,7 +58,7 @@
   course-name: "Introduction to Communications",
   course-code: "EECG232",
   // document-type: "Portfolio Thesis",
-  title: "koftware Radio
+  title: "Software Radio
   Random Process Analysis",
 
   authors: (
@@ -90,7 +103,7 @@ This project explores 3 different encoding techniques. @encodings shows methods 
       image("./images/polar_nrz_signaling.png"),
       image("./images/polar_rz_signaling.png"),
 
-      [a) Unipolar Signaling ], [ b) Polar NRZ Signaling ], [ c) Polar RZ Signaling ],
+      [a) Unipolar Signaling], [ b) Polar NRZ Signaling ], [ c) Polar RZ Signaling ],
     )
   },
 )<encodings>
@@ -98,10 +111,10 @@ This project explores 3 different encoding techniques. @encodings shows methods 
 
 == Generation of data
 The following MATLAB code generates a random string of 100 bits:
-#codeblock[````matlab
+#codeblock[```matlab
   bits = rand(100, 1) > 0.5; bits = bits(:)';
-````]
-The #raw(lang: "MATLAB", "rand(x,y)") function returns an $x times y$ array of uniformly distributed numbers between 0 and 1. Checking if the #raw(lang: "MATLAB", "rand") is more than $0.5$ can be used to create the boolean list of bits. Finally, the statement #raw(lang: "matlab", "bits = bits(:)';") transposes the bit array into a list of size $1 times 100$.
+```]
+The #raw(lang: "matlab", "rand(x,y)") function returns an $x times y$ array of uniformly distributed numbers between 0 and 1. Checking if the #raw(lang: "MATLAB", "rand") is more than $0.5$ can be used to create the boolean list of bits. Finally, the statement #raw(lang: "matlab", "bits = bits(:)';") transposes the bit array into a list of size $1 times 100$.
 
 
 === Control Flags
@@ -148,7 +161,7 @@ For polar return-to-zero, we first initialize the waveform matrix size and only 
 = Ensemble Generation
 The Random Process is characterized by randomized bits and a phase shift implemented as a circular shift of a random integer between 0 and `spb-1` as shown in  #text(fill: navy)[Lines 7,8] below.
 
-For a given random process $x(t)$, an experiment generates a *Realization* for the process. @desmos showcases an interactive polar nrz random process which can be tried #link("https://www.desmos.com/calculator/bxxjfclpyi")[Here.] Clicking the #text(fill: rgb("#0303ff"))[shuffle] button generates new realizations.
+For a given random process $x(t)$, an experiment generates a *Realization* for the process. @desmos showcases an interactive polar nrz random process which can be tried #link("https://www.desmos.com/calculator/bxxjfclpyi")[Here.] Clicking the #text(fill: rgb("#00005b"))[shuffle] button generates new realizations.
 #figure(image("./images/desmos2.png"), caption: "Polar NRZ Random Process.")<desmos>
 Multiple such realizations can be simulated to construct an *Ensemble* of random variables that can be used to calculate the statistical properties of the random process.
 #codeblock[```matlab
@@ -175,7 +188,7 @@ The waveforms are implemented using cell arrays such that it consists of 500 rea
 #figure(
   caption: [Realizations for each type of line encoding.],
   block(
-    stroke: 3.0pt + rgb("#555555"),
+    stroke: 1.0pt + rgb("#eee"),
     radius: 6pt,
     scale(095%, {
       set text(size: 0.75em)
