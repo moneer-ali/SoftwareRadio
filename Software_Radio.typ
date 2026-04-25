@@ -168,71 +168,82 @@ The Random Process is characterized by randomized bits and a phase shift impleme
 For a given random process $x(t)$, an experiment generates a *Realization* for the process. @desmos showcases an interactive polar nrz random process which can be tried #link("https://www.desmos.com/calculator/bxxjfclpyi")[Here.] Clicking the #text(fill: rgb("#00005b"))[shuffle] button generates new realizations.
 #figure(image("./images/desmos2.png"), caption: "Polar NRZ Random Process.")<desmos>
 Multiple of such realizations can be simulated to construct an *Ensemble* of random variables that can be used to calculate the statistical properties of the random process.
+
+`generate_ensemble()` acts as the core engine for generating a random process, using a flexible input system where `nargin` and `isempty` checks and prioritize user-provided arguments over the default values stored in `control_flags`.
+
+ To ensure high performance, it pre-allocates the ensemble matrix with `zeros(n_waveforms, waveform_length)`.
+
+  Inside the for loop, it generates a unique `random_bit_stream` for every realization and passes it to the `line_code_func` handle, allowing it to produce waveforms based on the desired linecode.
+
+   To model a WSS random process, the code calculates a phase variable ranging from `0` to `spb-1`. It then applies this offset using circshift`(raw_wf, [0, -phase])`, which ensures that the bit transitions do not always align perfectly with the start of the sample buffer. Each shifted raw_wf is then stored as a row in the final matrix, creating a comprehensive ensemble ready for statistical analysis.
+
+
 #codeblock[```matlab
-function [ensemble, waveforms] = generate_ensemble(code_func, A, spb,
-                                          n_waveforms=500, n_bits=100)
-  waveforms = cell(n_waveforms, 1);
-  for i = 1:n_waveforms
-    bits = rand(n_bits, 1) > 0.5; bits = bits(:)';
-    waveforms{i} = code_func(bits, A, spb);
-    phase = randi([0 spb-1]);
-    waveforms{i} = [waveforms{i}(1+phase:end), waveforms{i}(1:phase)];
-  end
-  waveform_length = length(waveforms{1});
+function ensemble = generate_ensemble(line_code_func, control_flags, n_waveforms, n_bits, A, spb)
+  % Use provided arguments or fall back to control_flags struct
+  if nargin < 6 || isempty(spb), spb = control_flags.sample_per_bit; end
+  if nargin < 5 || isempty(A), A = control_flags.A; end
+  if nargin < 4 || isempty(n_bits), n_bits = control_flags.n_bits; end
+  if nargin < 3 || isempty(n_waveforms), n_waveforms = control_flags.n_waveforms; end
+  
+  % Direct allocation for memory efficiency
+  waveform_length = n_bits * spb;
   ensemble = zeros(n_waveforms, waveform_length);
+  
   for i = 1:n_waveforms
-    ensemble(i, :) = waveforms{i};
+      random_bit_stream = randi([0 1], 1, n_bits);
+      raw_wf = line_code_func(random_bit_stream, A, spb);
+      
+      % Apply random phase by circular shift and store directly in matrix
+      phase = randi([0, spb-1]);
+      ensemble(i, :) = circshift(raw_wf, [0, -phase]);
   end
-endfunction
+end
 ```]
 
-== Cell preparation for calculating stat. mean and autocorr.
-The waveforms are implemented using cell arrays such that it consists of 500 realizations and can be easily accessed using the '{' and '}' indexing operators. The `ensemble` is a $500 times 800$ matrix where each row corresponds to a realization and columns represent the random process for different realizations.
 
-#figure(
-  caption: [Realizations for each type of line encoding.],
-  block(
-    stroke: 1.0pt + rgb("#eee"),
-    radius: 6pt,
-    scale(095%, {
-      set text(size: 0.75em)
-      grid(
-        columns: 2,
-        row-gutter: 0.2em,
-        column-gutter: 0em,
-        rows: 2,
-        image("./images/Unipolar_NRZ_Waveforms.png"), image("./images/Polar_NRZ_Waveforms.png"),
+To make things cleaner, a function called `generate_all_ensembles()` is implemented to return a cell array containing 3 ensembles, one for each line code.
 
-        grid.cell(colspan: 2, align(center, image("./images/Polar_RZ_Waveforms.png", width: 59%))),
-      )
-    }),
-  ),
-)<waveforms>
+#codeblock([```matlab
+function ensembles = generate_all_ensembles(control_flags, n_waveforms, n_bits, A, spb)
+    % Pass along optional arguments (empty brackets will trigger defaults in generate_ensemble)
+    if nargin < 5, spb = []; end
+    if nargin < 4, A = []; end
+    if nargin < 3, n_bits = []; end
+    if nargin < 2, n_waveforms = []; end
 
-The waveforms in @waveforms were generated using the below code, showing a sample of the structure of the three line encodings.
+    % Generates ensembles in order: Unipolar, Polar NRZ, Polar RZ
+    ens_uz = generate_ensemble(@unipolar_nrz, control_flags, n_waveforms, n_bits, A, spb);
+    ens_pz = generate_ensemble(@polar_nrz, control_flags, n_waveforms, n_bits, A, spb);
+    ens_rz = generate_ensemble(@polar_rz, control_flags, n_waveforms, n_bits, A, spb);
+    
+    ensembles = {ens_uz, ens_pz, ens_rz};
+end
+
+```
+])
+
+== visualizing waveforms
+
+A function `plot_sample_waveforms()` called  that takes the all_ensembles and generates a plot of the first 5 waveforms of each ensemble was implemented but it's not shown here as it's has nothing to do with the core logic of the simulation.
+
+The function is used in the following code to plot the first 5 wavforms of each ensemble
 
 #codeblock[```MATLAB
-function plot_waveforms3(code_func, name, n_show=5)
-  [ensemble, waveforms] = generate_ensemble(code_func);
-  n = min(n_show, length(waveforms));
-  figure;
-  for i = 1:n
-    subplot(n, 1, i);
-    plot(waveforms{i}(1:30*8), 'LineWidth', 2);
-    ylabel('Amp');
-    ylim([-6 6]);
-    if i == 1
-      title(sprintf('First %d %s Waveforms', n, name));
-    end
-  end
-  xlabel('Sample');
-endfunction
-plot_waveforms3(@unipolar_nrz, "Unipolar NRZ")
-plot_waveforms3(@polar_nrz, "Polar NRZ")
-plot_waveforms3(@rz, "Polar RZ")
+
+%% Generate Ensembles
+ensembles_5h = generate_all_ensembles(control_flags);
+
+%% Plot waveforms
+plot_sample_waveforms(ensembles_5h, control_flags);
+
 ```]
+#figure(
+  caption: [Realizations for each type of line encoding.],
+  image("./images/waveforms.png")
+)<waveforms>
 
-
+The waveforms in @waveforms were generated using the above code, showing a sample of the structure of the three line codes.
 
 = Analysis
 The following analysis is performed on an ensemble of $N = 500$ waveforms, each containing $L = 100$ bits at $"spb" = 8$ samples per bit, giving a total waveform length of $L_s = 800$ samples. The amplitude is $A = 4$.
