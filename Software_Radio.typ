@@ -145,7 +145,8 @@ end
 For polar return-to-zero, we first initialize the waveform matrix size and only set half of the `spb` to `A` and `-A` for the high and low bits respectively:
 
 A visualized exmaple if `n_bit = 2` and `spb = 4`
-$  [0 thick 1] -->^(times 2) [0 thick 2] -->^(-1) [-1 thick 1] -->^(times "A") [-"A" thick "A"] arrow.long.r ^("repmat") mat(delim: "[", 0, "A"; 0, "A"; 0, "A"; 0, "A") arrow.long.r ^("Zero") mat(delim: "[", 0, "A"; 0, "A"; 0, 0; 0, 0)-->^("reshape") [0 thick 0 thick 0 thick 0 thick "A" thick "A" thick 0 thick 0] $
+$  [0 thick 1] -->^(times 2) [0 thick 2] -->^(-1) [-1 thick 1] -->^(times "A") [-"A" thick "A"]
+   arrow.long.r ^("repmat") mat(delim: "[", -"A", "A"; -"A", "A"; -"A", "A"; -"A", "A") arrow.long.r ^("Zero") mat(delim: "[", -"A", "A"; -"A", "A"; 0, 0; 0, 0)-->^("reshape") [-"A" thick -"A" thick 0 thick 0 thick "A" thick "A" thick 0 thick 0] $
 
 #codeblock[```MATLAB
 function waveform = polar_rz(bits, A, spb)
@@ -166,7 +167,7 @@ The Random Process is characterized by randomized bits and a phase shift impleme
 
 For a given random process $x(t)$, an experiment generates a *Realization* for the process. @desmos showcases an interactive polar nrz random process which can be tried #link("https://www.desmos.com/calculator/bxxjfclpyi")[Here.] Clicking the #text(fill: rgb("#00005b"))[shuffle] button generates new realizations.
 #figure(image("./images/desmos2.png"), caption: "Polar NRZ Random Process.")<desmos>
-Multiple such realizations can be simulated to construct an *Ensemble* of random variables that can be used to calculate the statistical properties of the random process.
+Multiple of such realizations can be simulated to construct an *Ensemble* of random variables that can be used to calculate the statistical properties of the random process.
 #codeblock[```matlab
 function [ensemble, waveforms] = generate_ensemble(code_func, A, spb,
                                           n_waveforms=500, n_bits=100)
