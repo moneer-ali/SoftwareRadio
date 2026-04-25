@@ -10,11 +10,6 @@
   }
 }
 
-
-
-
-
-
 #let codeblock(body) = {
   show raw: it => {
     block(
@@ -50,7 +45,8 @@
 
 ``
 
-#set text(font: "New Computer Modern", size: 12pt)
+#set text(font: "Times New Roman", size: 12pt)
+#set par(first-line-indent: 1em)
 // #context text.size
 // --- Front page / document metadata ---
 // #v(-2em)
@@ -76,18 +72,12 @@
 
 
 = Introduction
-
 Software Radio is a technique wherein digital signal processing is used to perform radio communication functions traditionally implemented in analog hardware. This approach allows for greater flexibility and adaptability in communication systems, enabling the implementation of various modulation schemes, error correction techniques, and signal processing algorithms through software updates rather than hardware changes.
 
 This project focuses on generating line encodings for randomly transmitted bits and analyzing the statistical properties of the resulting waveforms. The statistical analysis serves a practical engineering purpose as an ideal transmitted signal should form a stationary and ergodic random process.
 
 Stationarity ensures that the signal's spectral density (PSD) is stable over time, enabling the definition of a fixed power spectral density and predictable bandwidth occupancy. Ergodicity ensures that a single observed waveform is statistically representative of the entire ensemble, which is critical in practice since it can greatly reduce costs by requiring fewer testing procedures during design validation and characterization. Together these properties form the theoretical foundation for receiver filter design, bandwidth estimation, and BER analysis.
 
-
-
-
-
-= Line codes
 This project explores 3 different encoding techniques. @encodings shows methods for representing the same binary data in a discrete method. The properties of each will be explored.
 
 #figure(
@@ -108,24 +98,35 @@ This project explores 3 different encoding techniques. @encodings shows methods 
   },
 )<encodings>
 
-
-== Generation of data
-The following MATLAB code generates a random string of 100 bits:
+= Control Flags
+To easily configure and manage the entire simulation from a single centralized location, the following control parameters are defined at the very beginning of the script. They govern the data generation process: the signal amplitude (`A = 4`), the resolution of each bit (`sample_per_bit = 8`), and the physical time duration of a single sample (`sample_period = 1e-3`). Furthermore, the dimensions of the random process are defined by the length of each individual waveform (`n_bits = 100`) and the total number of simulated realizations within the ensemble (`n_waveforms = 500`).
+#codeblock[```MATLAB
+  % Control Flags (Defaults)
+  control_flags.A = 4;
+  control_flags.sample_per_bit = 8;
+  control_flags.sample_period = 1e-3;
+  control_flags.n_bits = 100;
+  control_flags.n_waveforms = 500;
+  ```
+]
+= Generation of data
+The following MATLAB code generates a random bit stream of 100 bits:
 #codeblock[```matlab
-  bits = rand(100, 1) > 0.5; bits = bits(:)';
+  random_bit_stream = randi([0 1], 1, 100);
 ```]
-The #raw(lang: "matlab", "rand(x,y)") function returns an $x times y$ array of uniformly distributed numbers between 0 and 1. Checking if the #raw(lang: "MATLAB", "rand") is more than $0.5$ can be used to create the boolean list of bits. Finally, the statement #raw(lang: "matlab", "bits = bits(:)';") transposes the bit array into a list of size $1 times 100$.
+The #raw(lang: "matlab", "randi([0 1], x, y)") function returns an $x times y$ array of uniformly distributed numbers between 0 and 1.
 
-
-=== Control Flags
-Two parameters are used for the generation of the line encodings: the amplitude of the signal (`A=4`), and how many samples each bit occupies (`spb=8`).
 == Unipolar Signaling
-For unipolar signaling, the bits `[0 1]` map to `[0 A]` to get the logic levels. The Repeat Matrix function `repmat(levels, spb, 1)` duplicates the $1 times 100$ matrix (`spb` or 8) times vertically creating a $8 times (100 dot 1)$ matrix. The `reshape()` function transforms the matrix into a $1 times 700$ list along the columns:
+For unipolar signaling, the bits `[0 1]` map to `[0 A]` to get the logic levels. The Repeat Matrix function `repmat(levels, spb, 1)` duplicates the $1 times$ `n_bits` matrix (`spb`) times vertically creating a `spb` $ times$ `n_bit` matrix. The `reshape()` function transforms the matrix into a $1 times $(`spb` $dot$ `n_bits` list along the columns:
+
+A visualized exmaple if `n_bit = 2` and `spb = 2`
+$ "bits: " [0 thick 1] -->^(times "A") [0 thick "A"] arrow.long.r ^("repmat") mat(delim: "[", 0, "A"; 0, "A") -->^("reshape") [0 thick 0 thick "A" thick "A"] $
+
 #codeblock[```MATLAB
   function waveform = unipolar_nrz(bits, A, spb)
     levels = bits * A;
-    waveform = reshape(repmat(levels, spb, 1), 1, []);
-  endfunction
+    waveform = reshape(repmat(levels(:)', spb, 1), 1, []);
+  end
   ```
 ]
 == Polar NRZ Signaling
@@ -133,32 +134,34 @@ The mapping for polar non-return-to-zero maps `[0 1]` into `[-A A]` through the 
 $ "bits: "[0 thick 1] -->^(times 2) [0 thick 2] -->^(-1) [-1 thick 1] -->^(times "A") [-"A" thick "A"] $
 MATLAB/Octave code for Polar NRZ:
 #codeblock[ ```MATLAB
-  function waveform = polar_nrz(bits, A, spb)
-     levels = (2*bits - 1) * A;
-    waveform = reshape(repmat(levels, spb, 1), 1, []);
-  endfunction
+function waveform = unipolar_nrz(bits, A, spb)
+  levels = bits * A;
+  waveform = reshape(repmat(levels(:)', spb, 1), 1, []);
+end
   ```
 ]
 
 == Polar RZ Signaling
 For polar return-to-zero, we first initialize the waveform matrix size and only set half of the `spb` to `A` and `-A` for the high and low bits respectively:
+
+A visualized exmaple if `n_bit = 2` and `spb = 4`
+$  [0 thick 1] -->^(times 2) [0 thick 2] -->^(-1) [-1 thick 1] -->^(times "A") [-"A" thick "A"] arrow.long.r ^("repmat") mat(delim: "[", 0, "A"; 0, "A"; 0, "A"; 0, "A") arrow.long.r ^("Zero") mat(delim: "[", 0, "A"; 0, "A"; 0, 0; 0, 0)-->^("reshape") [0 thick 0 thick 0 thick 0 thick "A" thick "A" thick 0 thick 0] $
+
 #codeblock[```MATLAB
-  function waveform = rz(bits, A, spb)
-    n = length(bits);
-    waveform = zeros(1, n * spb);
-    half_spb = floor(spb / 2);
-    for i = 0:n-1
-      if bits(i+1) == 1
-        waveform(i*spb+1 : i*spb+half_spb) = A;
-      else
-        waveform(i*spb+1 : i*spb+half_spb) = -A;
-      end
-    end
-  endfunction
+function waveform = polar_rz(bits, A, spb)
+  half_spb = floor(spb / 2);
+  levels = (2*bits(:)' - 1) * A;
+  raw_matrix = repmat(levels, spb, 1);
+  
+  % Zero out the second half of each bit period 
+  raw_matrix(half_spb+1:end, :) = 0; 
+  
+  waveform = reshape(raw_matrix, 1, []);
+end
   ```
 ]
 
-= Ensemble Generation
+== Ensemble Generation
 The Random Process is characterized by randomized bits and a phase shift implemented as a circular shift of a random integer between 0 and `spb-1` as shown in  #text(fill: navy)[Lines 7,8] below.
 
 For a given random process $x(t)$, an experiment generates a *Realization* for the process. @desmos showcases an interactive polar nrz random process which can be tried #link("https://www.desmos.com/calculator/bxxjfclpyi")[Here.] Clicking the #text(fill: rgb("#00005b"))[shuffle] button generates new realizations.
