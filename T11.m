@@ -16,15 +16,16 @@
 clear; clc; close all;
 
 % Control Flags (Defaults)
-params.A = 4;
-params.sample_per_bit = 8;
-params.n_bits = 100;
-params.n_waveforms = 500;
+control_flags.A = 4;
+control_flags.sample_per_bit = 8;
+control_flags.sample_period = 1e-3;
+control_flags.n_bits = 100;
+control_flags.n_waveforms = 500;
 
 % === Execution ===
 
 %% Generate Ensembles
-ensembles_5h = generate_all_ensembles(params);
+ensembles_5h = generate_all_ensembles(control_flags);
 
 %% Plot waveforms
 plot_sample_waveforms(ensembles_5h);
@@ -50,7 +51,7 @@ plot_psd_from_ensembles(ensembles_5h);
 %% Functions
 
 % Ensemble Generation
-function ensembles = generate_all_ensembles(params, n_waveforms, n_bits, A, spb)
+function ensembles = generate_all_ensembles(control_flags, n_waveforms, n_bits, A, spb)
     % Pass along optional arguments (empty brackets will trigger defaults in generate_ensemble)
     if nargin < 5, spb = []; end
     if nargin < 4, A = []; end
@@ -58,18 +59,18 @@ function ensembles = generate_all_ensembles(params, n_waveforms, n_bits, A, spb)
     if nargin < 2, n_waveforms = []; end
 
     % Generates ensembles in order: Unipolar, Polar NRZ, Polar RZ
-    ens_uz = generate_ensemble(@unipolar_nrz, params, n_waveforms, n_bits, A, spb);
-    ens_pz = generate_ensemble(@polar_nrz, params, n_waveforms, n_bits, A, spb);
-    ens_rz = generate_ensemble(@polar_rz, params, n_waveforms, n_bits, A, spb);
+    ens_uz = generate_ensemble(@unipolar_nrz, control_flags, n_waveforms, n_bits, A, spb);
+    ens_pz = generate_ensemble(@polar_nrz, control_flags, n_waveforms, n_bits, A, spb);
+    ens_rz = generate_ensemble(@polar_rz, control_flags, n_waveforms, n_bits, A, spb);
     
     ensembles = {ens_uz, ens_pz, ens_rz};
 end
-function ensemble = generate_ensemble(line_code_func, params, n_waveforms, n_bits, A, spb)
-    % Use provided arguments or fall back to params struct
-    if nargin < 6 || isempty(spb), spb = params.sample_per_bit; end
-    if nargin < 5 || isempty(A), A = params.A; end
-    if nargin < 4 || isempty(n_bits), n_bits = params.n_bits; end
-    if nargin < 3 || isempty(n_waveforms), n_waveforms = params.n_waveforms; end
+function ensemble = generate_ensemble(line_code_func, control_flags, n_waveforms, n_bits, A, spb)
+    % Use provided arguments or fall back to control_flags struct
+    if nargin < 6 || isempty(spb), spb = control_flags.sample_per_bit; end
+    if nargin < 5 || isempty(A), A = control_flags.A; end
+    if nargin < 4 || isempty(n_bits), n_bits = control_flags.n_bits; end
+    if nargin < 3 || isempty(n_waveforms), n_waveforms = control_flags.n_waveforms; end
     
     % Direct allocation for memory efficiency
     waveform_length = n_bits * spb;
@@ -95,16 +96,14 @@ function waveform = polar_nrz(bits, A, spb)
     waveform = reshape(repmat(levels, spb, 1), 1, []);
 end
 function waveform = polar_rz(bits, A, spb)
-    n = length(bits);
-    waveform = zeros(1, n * spb);
     half_spb = floor(spb / 2);
-    for i = 0:n-1
-        if bits(i+1) == 1
-            waveform(i*spb+1 : i*spb+half_spb) = A;
-        else
-            waveform(i*spb+1 : i*spb+half_spb) = -A;
-        end
-    end
+    levels = (2*bits(:)' - 1) * A;
+    raw_matrix = repmat(levels, spb, 1);
+    
+    % Zero out the second half of each bit period to make it Return-to-Zero
+    raw_matrix(half_spb+1:end, :) = 0; 
+    
+    waveform = reshape(raw_matrix, 1, []);
 end
 
 % Analysis Functions
@@ -219,8 +218,8 @@ function plot_time_autocorrelations(ensembles)
     end
     ylabel('Autocorrelation Rx'); legend(names); hold off;
 end
-function plot_psd_from_ensembles(ensembles, sample_period)
-    if nargin < 2 || isempty(sample_period), sample_period = 10e-3; end
+function plot_psd_from_ensembles(ensembles, control_flags)
+    if nargin < 2 || isempty(sample_period), sample_period = control_flags.sample_period; end
     max_lag = 32; 
     N = 2 * max_lag + 1;
     k = -(N-1)/2 : (N-1)/2;
