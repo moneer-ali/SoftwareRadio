@@ -26,18 +26,18 @@
           inset: 0.8em,
           // sidebar background
           fill: (col, row) => if col == 0 { rgb("#eef0f2") },
-          
+
           // COLUMN 1: Numbers
           align(right, text(fill: navy.lighten(20%), weight: "bold")[
             #it.lines.enumerate().map(((i, _)) => [#(i + 1)]).join([\ ])
           ]),
-          
+
           // COLUMN 2: Code
           align(left)[
             #it.lines.map(l => l).join([\ ])
-          ]
+          ],
         )
-      }
+      },
     )
   }
   body
@@ -60,7 +60,7 @@
   authors: (
     (
       name: "Team 11",
-      code: []
+      code: [],
     ),
   ),
   author-columns: 1,
@@ -117,10 +117,12 @@ The following MATLAB code generates a random bit stream of 100 bits:
 The #raw(lang: "matlab", "randi([0 1], x, y)") function returns an $x times y$ array of uniformly distributed numbers between 0 and 1.
 
 == Unipolar Signaling
-For unipolar signaling, the bits `[0 1]` map to `[0 A]` to get the logic levels. The Repeat Matrix function `repmat(levels, spb, 1)` duplicates the $1 times$ `n_bits` matrix (`spb`) times vertically creating a `spb` $ times$ `n_bit` matrix. The `reshape()` function transforms the matrix into a $1 times $(`spb` $dot$ `n_bits` list along the columns:
+For unipolar signaling, the bits `[0 1]` map to `[0 A]` to get the logic levels. The Repeat Matrix function `repmat(levels, spb, 1)` duplicates the $1 times$ `n_bits` matrix (`spb`) times vertically creating a `spb` $times$ `n_bit` matrix. The `reshape()` function transforms the matrix into a $1 times$(`spb` $dot$ `n_bits` list along the columns:
 
-A visualized exmaple if `n_bit = 2` and `spb = 2`
-$ "bits: " [0 thick 1] -->^(times "A") [0 thick "A"] arrow.long.r ^("repmat") mat(delim: "[", 0, "A"; 0, "A") -->^("reshape") [0 thick 0 thick "A" thick "A"] $
+A visualized example if `n_bit = 2` and `spb = 2`
+$
+  "bits: " [0 thick 1] -->^(times "A") [0 thick "A"] arrow.long.r^("repmat") mat(delim: "[", 0, "A"; 0, "A") -->^("reshape") [0 thick 0 thick "A" thick "A"]
+$
 
 #codeblock[```MATLAB
   function waveform = unipolar_nrz(bits, A, spb)
@@ -134,48 +136,50 @@ The mapping for polar non-return-to-zero maps `[0 1]` into `[-A A]` through the 
 $ "bits: "[0 thick 1] -->^(times 2) [0 thick 2] -->^(-1) [-1 thick 1] -->^(times "A") [-"A" thick "A"] $
 MATLAB/Octave code for Polar NRZ:
 #codeblock[ ```MATLAB
-function waveform = unipolar_nrz(bits, A, spb)
-  levels = bits * A;
-  waveform = reshape(repmat(levels(:)', spb, 1), 1, []);
-end
+  function waveform = unipolar_nrz(bits, A, spb)
+    levels = bits * A;
+    waveform = reshape(repmat(levels(:)', spb, 1), 1, []);
+  end
   ```
 ]
 
 == Polar RZ Signaling
 For polar return-to-zero, we first initialize the waveform matrix size and only set half of the `spb` to `A` and `-A` for the high and low bits respectively:
 
-A visualized exmaple if `n_bit = 2` and `spb = 4`
-$  [0 thick 1] -->^(times 2) [0 thick 2] -->^(-1) [-1 thick 1] -->^(times "A") [-"A" thick "A"]
-   arrow.long.r ^("repmat") mat(delim: "[", -"A", "A"; -"A", "A"; -"A", "A"; -"A", "A") arrow.long.r ^("Zero") mat(delim: "[", -"A", "A"; -"A", "A"; 0, 0; 0, 0)-->^("reshape") [-"A" thick -"A" thick 0 thick 0 thick "A" thick "A" thick 0 thick 0] $
+A visualized example if `n_bit = 2` and `spb = 4`
+$
+  [0 thick 1] -->^(times 2) [0 thick 2] -->^(-1) [-1 thick 1] -->^(times "A") [-"A" thick "A"]
+  arrow.long.r^("repmat") mat(delim: "[", -"A", "A"; -"A", "A"; -"A", "A"; -"A", "A") arrow.long.r^("Zero") mat(delim: "[", -"A", "A"; -"A", "A"; 0, 0; 0, 0)-->^("reshape") [-"A" thick -"A" thick 0 thick 0 thick "A" thick "A" thick 0 thick 0]
+$
 
 #codeblock[```MATLAB
-function waveform = polar_rz(bits, A, spb)
-  half_spb = floor(spb / 2);
-  levels = (2*bits(:)' - 1) * A;
-  raw_matrix = repmat(levels, spb, 1);
-  
-  % Zero out the second half of each bit period 
-  raw_matrix(half_spb+1:end, :) = 0; 
-  
-  waveform = reshape(raw_matrix, 1, []);
-end
+  function waveform = polar_rz(bits, A, spb)
+    half_spb = floor(spb / 2);
+    levels = (2*bits(:)' - 1) * A;
+    raw_matrix = repmat(levels, spb, 1);
+
+    % Zero out the second half of each bit period
+    raw_matrix(half_spb+1:end, :) = 0;
+
+    waveform = reshape(raw_matrix, 1, []);
+  end
   ```
 ]
 
 == Ensemble Generation
 The Random Process is characterized by randomized bits and a phase shift implemented as a circular shift of a random integer between 0 and `spb-1`.
 
-For a given random process $x(t)$, an experiment generates a *Realization* for the process. @desmos showcases an interactive polar nrz random process which can be tried #link("https://www.desmos.com/calculator/bxxjfclpyi")[Here.] Clicking the #text(fill: rgb("#00005b"))[shuffle] button generates new realizations.
+For a given random process $x(t)$, an experiment generates a *Realization* for the process. @desmos showcases an interactive polar NRZ random process which can be tried #link("https://www.desmos.com/calculator/bxxjfclpyi")[Here.] Clicking the #text(fill: rgb("#00005b"))[shuffle] button generates new realizations.
 #figure(image("./images/desmos2.png"), caption: "Polar NRZ Random Process.")<desmos>
 Multiple of such realizations can be simulated to construct an *Ensemble* of random variables that can be used to calculate the statistical properties of the random process.
 
 `generate_ensemble()` acts as the core engine for generating a random process, using a flexible input system where `nargin` and `isempty` checks and prioritize user-provided arguments over the default values stored in `control_flags`.
 
- To ensure high performance, it pre-allocates the ensemble matrix with `zeros(n_waveforms, waveform_length)`.
+To ensure high performance, it pre-allocates the ensemble matrix with `zeros(n_waveforms, waveform_length)`.
 
-  Inside the for loop, it generates a unique `random_bit_stream` for every realization and passes it to the `line_code_func` handle, allowing it to produce waveforms based on the desired linecode.
+Inside the for loop, it generates a unique `random_bit_stream` for every realization and passes it to the `line_code_func` handle, allowing it to produce waveforms based on the desired line code.
 
-   To model a WSS random process, the code calculates a phase variable ranging from `0` to `spb-1`. It then applies this offset using circshift`(raw_wf, [0, -phase])`, which ensures that the bit transitions do not always align perfectly with the start of the sample buffer. Each shifted raw_wf is then stored as a row in the final matrix, creating a comprehensive ensemble ready for statistical analysis.
+To model a WSS random process, the code calculates a phase variable ranging from `0` to `spb-1`. It then applies this offset using `circshift(raw_wf, [0, -phase])`, which ensures that the bit transitions do not always align perfectly with the start of the sample buffer. Each shifted `raw_wf` is then stored as a row in the final matrix, creating a comprehensive ensemble ready for statistical analysis.
 
 
 #codeblock[```matlab
@@ -185,15 +189,15 @@ function ensemble = generate_ensemble(line_code_func, control_flags, n_waveforms
   if nargin < 5 || isempty(A), A = control_flags.A; end
   if nargin < 4 || isempty(n_bits), n_bits = control_flags.n_bits; end
   if nargin < 3 || isempty(n_waveforms), n_waveforms = control_flags.n_waveforms; end
-  
+
   % Direct allocation for memory efficiency
   waveform_length = n_bits * spb;
   ensemble = zeros(n_waveforms, waveform_length);
-  
+
   for i = 1:n_waveforms
       random_bit_stream = randi([0 1], 1, n_bits);
       raw_wf = line_code_func(random_bit_stream, A, spb);
-      
+
       % Apply random phase by circular shift and store directly in matrix
       phase = randi([0, spb-1]);
       ensemble(i, :) = circshift(raw_wf, [0, -phase]);
@@ -205,22 +209,22 @@ end
 To make things cleaner, a function called `generate_all_ensembles()` is implemented to return a cell array containing 3 ensembles, one for each line code.
 
 #codeblock([```matlab
-function ensembles = generate_all_ensembles(control_flags, n_waveforms, n_bits, A, spb)
-    % Pass along optional arguments (empty brackets will trigger defaults in generate_ensemble)
-    if nargin < 5, spb = []; end
-    if nargin < 4, A = []; end
-    if nargin < 3, n_bits = []; end
-    if nargin < 2, n_waveforms = []; end
+  function ensembles = generate_all_ensembles(control_flags, n_waveforms, n_bits, A, spb)
+      % Pass along optional arguments (empty brackets will trigger defaults in generate_ensemble)
+      if nargin < 5, spb = []; end
+      if nargin < 4, A = []; end
+      if nargin < 3, n_bits = []; end
+      if nargin < 2, n_waveforms = []; end
 
-    % Generates ensembles in order: Unipolar, Polar NRZ, Polar RZ
-    ens_uz = generate_ensemble(@unipolar_nrz, control_flags, n_waveforms, n_bits, A, spb);
-    ens_pz = generate_ensemble(@polar_nrz, control_flags, n_waveforms, n_bits, A, spb);
-    ens_rz = generate_ensemble(@polar_rz, control_flags, n_waveforms, n_bits, A, spb);
-    
-    ensembles = {ens_uz, ens_pz, ens_rz};
-end
+      % Generates ensembles in order: Unipolar, Polar NRZ, Polar RZ
+      ens_uz = generate_ensemble(@unipolar_nrz, control_flags, n_waveforms, n_bits, A, spb);
+      ens_pz = generate_ensemble(@polar_nrz, control_flags, n_waveforms, n_bits, A, spb);
+      ens_rz = generate_ensemble(@polar_rz, control_flags, n_waveforms, n_bits, A, spb);
 
-```
+      ensembles = {ens_uz, ens_pz, ens_rz};
+  end
+
+  ```
 ])
 
 == visualizing waveforms
@@ -228,7 +232,7 @@ end
 
 A function called `plot_sample_waveforms()` which takes the all_ensembles and generates a plot of the first 5 waveforms of each ensemble was implemented but it's not shown here as it has nothing to do with the core logic of the simulation you can check it in the Full code.
 
-The function is used in the following code to plot the first 5 wavforms of each ensemble
+The function is used in the following code to plot the first 5 waveforms of each ensemble
 
 #codeblock[```MATLAB
 
@@ -241,7 +245,7 @@ plot_sample_waveforms(ensembles_5h, control_flags);
 ```]
 #figure(
   caption: [Realizations for each type of line encoding.],
-  image("./images/waveforms.png")
+  image("./images/waveforms.png"),
 )<waveforms>
 
 The waveforms in @waveforms were generated using the above code, showing a sample of the structure of the three line codes.
@@ -257,7 +261,7 @@ $ m_x (t) = E[x(t)] = 1/N sum_(i=1)^(N) x_i(t) quad #cite(<lec4_s6>) $ <ensemble
 
 This yields a $1 times 800$ vector — one mean value per time sample. @means shows how the mean is nearly constant across time with a smaller variance over a larger ensemble.
 
-A function called `plot_means()` was implementated. It takes a cell array of ensembles then calculates the mean and plots it for every ensemble
+A function called `plot_means()` was implemented. It takes a cell array of ensembles then calculates the mean and plots it for every ensemble
 
 #codeblock([```matlab
 ens_5h = generate_all_ensembles(500);
@@ -285,16 +289,16 @@ plot_means(ens_5k)
 
 function plot_means(ensembles)
   names = {'Unipolar NRZ', 'Polar NRZ', 'Polar RZ'};
-  colors = {'k', 'b', 'r'}; 
+  colors = {'k', 'b', 'r'};
   n_waveforms = size(ensembles{1}, 1);
-  
+
   figure; hold on;
   for i = 1:length(ensembles)
       current_ens = ensembles{i};
       ens_mean = mean(current_ens, 1);
       average = mean(ens_mean);
       variance = var(ens_mean);
-      
+
       plot(ens_mean, 'Color', colors{i},...
        'LineWidth', 1.5, 'DisplayName', names{i});
       stats_text = sprintf('%s: \\mu = %.4f, \\sigma^2 = %.4e', names{i}, average, variance);
@@ -312,7 +316,9 @@ end
 == The Ensemble Autocorrelation Function
 
 The ensemble autocorrelation function says how much a certain reading influences the next one separated by a lag $tau$:
-$ R_x (t,tau) = E[x(t) dot x(t+tau)] = 1/N sum_(i=1)^(N) 1/(L_s - tau) sum_(t=1)^(L_s - tau) x_i (t) dot x_i (t + tau) quad #cite(<lec4_s7>) $
+$
+  R_x (t,tau) = E[x(t) dot x(t+tau)] = 1/N sum_(i=1)^(N) 1/(L_s - tau) sum_(t=1)^(L_s - tau) x_i (t) dot x_i (t + tau) quad #cite(<lec4_s7>)
+$
 
 In @autocorr, the autocorrelation function is calculated for varying start times over varying lags. It can be seen that $R_x (t,tau)$ doesn't depend on the initial time and only depends on the time difference ($R_x (t,tau) = R_x (tau)$). Additionally, since $m_x$ was calculated to be a constant over time, the random process is *Wide Sense Stationary (WSS)*. That can also be verified by observing how the autocorrelation is an even function.
 
@@ -350,7 +356,7 @@ Lag Loop: It iterates through a range of time offsets from -max_lag to +max_lag.
 Double Averaging: It uses `mean(mean(product, 2))` to compute the average over all samples (time average) and all rows (ensemble average).
 #codeblock[```matlab
 function rx = ensemble_autocorr(ensemble, max_lag, t_start)
-    if nargin < 3 || isempty(t_start), t_start = 1; end 
+    if nargin < 3 || isempty(t_start), t_start = 1; end
     sub = ensemble(:, t_start:end);
     [~, n_samples] = size(sub);
     rx = zeros(1, 2*max_lag+1);
@@ -372,7 +378,7 @@ function plot_ensemble_autocorr(ensemble, name , max_lag, start_times)
     % Set default values if arguments are missing
     if nargin < 3 || isempty(max_lag), max_lag = 16; end
     if nargin < 4 || isempty(start_times), start_times = [1, 101, 354]; end
-    
+
     % Create the lag vector for the x-axis
     lags = -max_lag:max_lag;
     num_starts = length(start_times);
@@ -407,7 +413,7 @@ For a single realization $x_i (t)$, the time mean and autocorrelation both opera
 
 $
   chevron.l x(t) chevron.r = overline(x)_i = 1/L_s sum_(t=1)^(L_s) x_i (t) \
-  chevron.l x(t) dot x(t+tau) chevron.r = 1/(L_s - tau) sum_(t=1)^(L_s - tau) x_i (t) dot x_i (t + tau) quad #cite(<lec4_s23>) 
+  chevron.l x(t) dot x(t+tau) chevron.r = 1/(L_s - tau) sum_(t=1)^(L_s - tau) x_i (t) dot x_i (t + tau) quad #cite(<lec4_s23>)
 $
 
 While similar, the time-based autocorrelation differs from the ensemble $R_x$ in @autocorr.#linebreak()
@@ -457,10 +463,10 @@ function plot_time_autocorrelations(ensembles)
     figure; hold on; grid on;
     % Ordered: Unipolar NRZ, Polar NRZ, Polar RZ
     names = {'Unipolar NRZ', 'Polar NRZ', 'Polar RZ'};
-    colors = {'k', 'b', 'r'}; 
-    
+    colors = {'k', 'b', 'r'};
+
     for i = 1:3
-        wv = ensembles{i}(1,:); 
+        wv = ensembles{i}(1,:);
         plot(-32:32, time_autocorr(wv, 32), ...
             'Color', colors{i}, 'LineWidth', 1.5);
         stats_text = sprintf('%s: \\mu = %.4f', names{i}, mean(wv));
@@ -487,7 +493,7 @@ For the bandwidth, we choose the point of first zero of the $S_x (f)$ function g
 $
   "Passband BW" = cases(
     2 times 12.31 =24.62 "Hz for Unipolar NRZ",
-    2 times 24.62 =49.24 "Hz for Polar NRZ",
+    2 times 12.31 =24.62 "Hz for Polar NRZ",
     2 times 24.62 =49.24 "Hz for Polar RZ",
   )
 $
@@ -507,26 +513,26 @@ The discrepancy in the RZ encoding happens since it only transmits data for half
     stroke: 0.5pt + gray,
     [*Encoding*], [*Effective $T_p$*], [*Analytical BW* ($1/T_p$)], [*Simulation BW*],
     [Unipolar NRZ], [80 ms], [12.5 Hz], [12.31 Hz],
-    [Polar NRZ],   [80 ms], [12.5 Hz], [12.31 Hz],
-    [Polar RZ],     [40 ms], [25 Hz], [24.62 Hz],
+    [Polar NRZ], [80 ms], [12.5 Hz], [12.31 Hz],
+    [Polar RZ], [40 ms], [25 Hz], [24.62 Hz],
   ),
-  caption: [Comparison of Analytical vs. Simulation Baseband Bandwidth]
+  caption: [Comparison of Analytical vs. Simulation Baseband Bandwidth],
 )
 
 #codeblock[```matlab
 function plot_psd_from_ensembles(ensembles, control_flags, sample_period)
     if nargin < 3 || isempty(sample_period)
-        sample_period = control_flags.sample_period; 
+        sample_period = control_flags.sample_period;
     end
-    max_lag = 32; 
+    max_lag = 32;
     N = 2 * max_lag + 1;
     fs = 1 / sample_period;
     freq_axis = (-(N-1)/2:(N-1)/2) * (fs / N);
-    
+
     % Ordered: Unipolar NRZ, Polar NRZ, Polar RZ
     names = {'Unipolar NRZ', 'Polar NRZ', 'Polar RZ'};
-    colors = {'k', 'r', 'b'}; 
-    
+    colors = {'k', 'r', 'b'};
+
     figure; hold on; grid on;
     p = zeros(1, 3);
     for i = 1:3
@@ -568,7 +574,6 @@ end
 // = Conclusion
 // #pagebreak()
 
-
 #pagebreak()
 
 = Full MATLAB code
@@ -579,13 +584,13 @@ end
 % Introduction to Communication Systems
 % Project 2
 % Team 11
-% Submitted to Eng. Mohammed Khaled 
+% Submitted to Eng. Mohammed Khaled
 %
-% Description: 
-% This script generates, visualizes, and analyzes WSS random processes 
+% Description:
+% This script generates, visualizes, and analyzes WSS random processes
 % using Unipolar NRZ, Polar NRZ, and Polar RZ line codes.
 %
-% NOTE: Please run this script section by section (using 'Run Section') 
+% NOTE: Please run this script section by section (using 'Run Section')
 %       to avoid triggering a fountain of plots all at once.
 % =========================================================================
 
@@ -621,7 +626,7 @@ plot_time_autocorrelations(ensembles_5h);
 %% Plot PSD
 plot_psd_from_ensembles(ensembles_5h, control_flags);
 
-% ==== Excution End ====
+% ==== Execution End ====
 
 %% Functions
 
@@ -637,7 +642,7 @@ function ensembles = generate_all_ensembles(control_flags, n_waveforms, n_bits, 
     ens_uz = generate_ensemble(@unipolar_nrz, control_flags, n_waveforms, n_bits, A, spb);
     ens_pz = generate_ensemble(@polar_nrz, control_flags, n_waveforms, n_bits, A, spb);
     ens_rz = generate_ensemble(@polar_rz, control_flags, n_waveforms, n_bits, A, spb);
-    
+
     ensembles = {ens_uz, ens_pz, ens_rz};
 end
 function ensemble = generate_ensemble(line_code_func, control_flags, n_waveforms, n_bits, A, spb)
@@ -646,15 +651,15 @@ function ensemble = generate_ensemble(line_code_func, control_flags, n_waveforms
     if nargin < 5 || isempty(A), A = control_flags.A; end
     if nargin < 4 || isempty(n_bits), n_bits = control_flags.n_bits; end
     if nargin < 3 || isempty(n_waveforms), n_waveforms = control_flags.n_waveforms; end
-    
+
     % Direct allocation for memory efficiency
     waveform_length = n_bits * spb;
     ensemble = zeros(n_waveforms, waveform_length);
-    
+
     for i = 1:n_waveforms
         random_bit_stream = randi([0 1], 1, n_bits);
         raw_wf = line_code_func(random_bit_stream, A, spb);
-        
+
         % Apply random phase by circular shift and store directly in matrix
         phase = randi([0, spb-1]);
         ensemble(i, :) = circshift(raw_wf, [0, -phase]);
@@ -674,16 +679,16 @@ function waveform = polar_rz(bits, A, spb)
     half_spb = floor(spb / 2);
     levels = (2*bits(:)' - 1) * A;
     raw_matrix = repmat(levels, spb, 1);
-    
+
     % Zero out the second half of each bit period to make it Return-to-Zero
-    raw_matrix(half_spb+1:end, :) = 0; 
-    
+    raw_matrix(half_spb+1:end, :) = 0;
+
     waveform = reshape(raw_matrix, 1, []);
 end
 
 % Analysis Functions
 function rx = ensemble_autocorr(ensemble, max_lag, t_start)
-    if nargin < 3 || isempty(t_start), t_start = 1; end 
+    if nargin < 3 || isempty(t_start), t_start = 1; end
     sub = ensemble(:, t_start:end);
     [~, n_samples] = size(sub);
     rx = zeros(1, 2*max_lag+1);
@@ -715,21 +720,21 @@ function plot_sample_waveforms(ensembles, control_flags, n_show, samples_to_show
     % Default arguments
     if nargin < 3 || isempty(n_show), n_show = 5; end
     if nargin < 4 || isempty(samples_to_show), samples_to_show = 240; end
-    
+
     names = {'Unipolar NRZ', 'Polar NRZ', 'Polar RZ'};
     num_line_codes = length(ensembles);
-    
+
     % Create a large figure to fit the grid
     figure('Name', 'Sample Waveforms');
-    
+
     for lc_idx = 1:num_line_codes
         current_ens = ensembles{lc_idx};
         % Ensure we don't try to show more waveforms/samples than exist
         n = min(n_show, size(current_ens, 1));
         max_samples = min(samples_to_show, size(current_ens, 2));
-        
-        y_limits = [-control_flags.A-1, control_flags.A+1]; % Find y-limits 
-        
+
+        y_limits = [-control_flags.A-1, control_flags.A+1]; % Find y-limits
+
         for wf_idx = 1:n
             subplot_idx = (wf_idx - 1) * num_line_codes + lc_idx;
             subplot(n, num_line_codes, subplot_idx);
@@ -738,13 +743,13 @@ function plot_sample_waveforms(ensembles, control_flags, n_show, samples_to_show
                 'LineWidth', 1.5, ...
                 'Color', '#0072BD');
             ylim(y_limits);
-            grid on;     
+            grid on;
             % Add column titles only on the top row
             if wf_idx == 1
                 title(names{lc_idx} ...
                     , 'FontWeight', 'bold', ...
                     'FontSize', 11);
-            end         
+            end
             % Add X-axis labels only on the bottom row
             if wf_idx == n
                 xlabel('Sample Index');
@@ -755,16 +760,16 @@ end
 function plot_means(ensembles)
     % Ordered: Unipolar NRZ, Polar NRZ, Polar RZ
     names = {'Unipolar NRZ', 'Polar NRZ', 'Polar RZ'};
-    colors = {'k', 'r', 'b'}; 
+    colors = {'k', 'r', 'b'};
     n_waveforms = size(ensembles{1}, 1);
-    
+
     figure; hold on;
     for i = 1:length(ensembles)
         current_ens = ensembles{i};
         ens_mean = mean(current_ens, 1);
         average = mean(ens_mean);
         variance = var(ens_mean);
-        
+
         plot(ens_mean, 'Color', colors{i}, 'LineWidth', 1.5, 'DisplayName', names{i});
         stats_text = sprintf('%s: \\mu = %.4f, \\sigma^2 = %.4e', names{i}, average, variance);
         text(0.02, 0.98 - (i-1)*0.06, stats_text, 'Units', 'normalized', ...
@@ -778,10 +783,10 @@ function plot_time_autocorrelations(ensembles)
     figure; hold on; grid on;
     % Ordered: Unipolar NRZ, Polar NRZ, Polar RZ
     names = {'Unipolar NRZ', 'Polar NRZ', 'Polar RZ'};
-    colors = {'k', 'r', 'b'}; 
-    
+    colors = {'k', 'r', 'b'};
+
     for i = 1:3
-        wv = ensembles{i}(1,:); 
+        wv = ensembles{i}(1,:);
         plot(-32:32, time_autocorr(wv, 32), ...
             'Color', colors{i}, 'LineWidth', 1.5);
         stats_text = sprintf('%s: \\mu = %.4f', names{i}, mean(wv));
@@ -798,35 +803,35 @@ function plot_ensemble_autocorr(ensemble, name , max_lag, start_times)
     % Set default values if arguments are missing
     if nargin < 3 || isempty(max_lag), max_lag = 16; end
     if nargin < 4 || isempty(start_times), start_times = [1, 101, 354]; end
-    
+
     % Create the lag vector for the x-axis
     lags = -max_lag:max_lag;
     num_starts = length(start_times);
-    
+
     % Initialize the figure window and automatically center it
     fig = figure('Name', name);
-    
+
     % Pre-define a color palette to cycle through
     colors = {'b', 'r', 'g', 'm', 'c', 'k'};
-    
+
     for i = 1:num_starts
         t_start = start_times(i);
-        
+
         % Calculate autocorrelation anchored at this specific starting time
         rx = ensemble_autocorr(ensemble, max_lag, t_start);
-        
+
         % Create subplot stacked vertically
         subplot(num_starts, 1, i);
-        
+
         % Pick a color, looping back to the start if num_starts > length(colors)
         c_idx = mod(i - 1, length(colors)) + 1;
-        
+
         % Plot the data
         plot(lags, rx, 'Color', colors{c_idx}, 'LineWidth', 2);
         ylabel('R_x', 'FontWeight', 'bold');
         title(sprintf('Starting Time t_0 = %d', t_start - 1));
         grid on;
-        
+
         % Only add the X-label to the very bottom subplot for cleaner visuals
         if i == num_starts
             xlabel('Lag', 'FontWeight', 'bold');
@@ -836,17 +841,17 @@ end
 
 function plot_psd_from_ensembles(ensembles, control_flags, sample_period)
     if nargin < 3 || isempty(sample_period)
-        sample_period = control_flags.sample_period; 
+        sample_period = control_flags.sample_period;
     end
-    max_lag = 32; 
+    max_lag = 32;
     N = 2 * max_lag + 1;
     fs = 1 / sample_period;
     freq_axis = (-(N-1)/2:(N-1)/2) * (fs / N);
-    
+
     % Ordered: Unipolar NRZ, Polar NRZ, Polar RZ
     names = {'Unipolar NRZ', 'Polar NRZ', 'Polar RZ'};
-    colors = {'k', 'r', 'b'}; 
-    
+    colors = {'k', 'r', 'b'};
+
     figure; hold on; grid on;
     p = zeros(1, 3);
     for i = 1:3
@@ -886,3 +891,4 @@ end
 ```]
 #pagebreak()
 #bibliography("sources.bib")
+
