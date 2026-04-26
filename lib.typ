@@ -386,6 +386,7 @@
   let link-fill = if dark-mode { blue.lighten(60%) } else { blue.darken(60%) }
   show link: set text(fill: link-fill)
   show ref: set text(fill: link-fill)
+  show figure.where(kind: table): set figure.caption(position: top)
   set table(stroke: if dark-mode { white } else { black })
 
   // Create title page
