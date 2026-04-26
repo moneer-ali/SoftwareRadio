@@ -18,7 +18,7 @@ clear; clc; close all;
 % Control Flags (Defaults)
 control_flags.A = 4;
 control_flags.sample_per_bit = 8;
-control_flags.sample_period = 1e-3;
+control_flags.sample_period = 10e-3;
 control_flags.n_bits = 100;
 control_flags.n_waveforms = 500;
 
@@ -28,7 +28,8 @@ control_flags.n_waveforms = 500;
 ensembles_5h = generate_all_ensembles(control_flags);
 
 %% Plot waveforms
-plot_sample_waveforms(ensembles_5h);
+
+plot_sample_waveforms(ensembles_5h, control_flags);
 
 %% Plot means
 plot_means(ensembles_5h);
@@ -42,11 +43,9 @@ plot_ensemble_autocorr(ensembles_5h{3}, "Polar RZ");
 plot_time_autocorrelations(ensembles_5h);
 
 %% Plot PSD
-plot_psd_from_ensembles(ensembles_5h);
+plot_psd_from_ensembles(ensembles_5h, control_flags);
 
 % ==== Excution End ====
-
-
 
 %% Functions
 
@@ -107,7 +106,7 @@ function waveform = polar_rz(bits, A, spb)
 end
 
 % Analysis Functions
-function rx = autocorr_from_t(ensemble, max_lag, t_start)
+function rx = ensemble_autocorr(ensemble, max_lag, t_start)
     if nargin < 3 || isempty(t_start), t_start = 1; end 
     sub = ensemble(:, t_start:end);
     [~, n_samples] = size(sub);
@@ -136,10 +135,10 @@ end
 
 % Visualization Functions
 
-function plot_sample_waveforms(ensembles, n_show, samples_to_show)
+function plot_sample_waveforms(ensembles, control_flags, n_show, samples_to_show)
     % Default arguments
-    if nargin < 2 || isempty(n_show), n_show = 5; end
-    if nargin < 3 || isempty(samples_to_show), samples_to_show = 240; end
+    if nargin < 3 || isempty(n_show), n_show = 5; end
+    if nargin < 4 || isempty(samples_to_show), samples_to_show = 240; end
     
     names = {'Unipolar NRZ', 'Polar NRZ', 'Polar RZ'};
     num_line_codes = length(ensembles);
@@ -149,31 +148,27 @@ function plot_sample_waveforms(ensembles, n_show, samples_to_show)
     
     for lc_idx = 1:num_line_codes
         current_ens = ensembles{lc_idx};
-        
         % Ensure we don't try to show more waveforms/samples than exist
         n = min(n_show, size(current_ens, 1));
         max_samples = min(samples_to_show, size(current_ens, 2));
         
-        % Find y-limits dynamically based on the ensemble's max amplitude
-        max_amp = max(max(abs(current_ens(1:n, :))));
-        y_limits = [-(max_amp + 1), (max_amp + 1)];
+        y_limits = [-control_flags.A-1, control_flags.A+1]; % Find y-limits 
         
         for wf_idx = 1:n
-            % Calculate the linear index for the subplot grid (row-major)
             subplot_idx = (wf_idx - 1) * num_line_codes + lc_idx;
             subplot(n, num_line_codes, subplot_idx);
-            
             % Plot the specific waveform slice
-            plot(current_ens(wf_idx, 1:max_samples), 'LineWidth', 1.5, 'Color', '#0072BD');
+            plot(current_ens(wf_idx, 1:max_samples), ...
+                'LineWidth', 1.5, ...
+                'Color', '#0072BD');
             ylim(y_limits);
-            xlim([1, max_samples]);
-            grid on;
-            
+            grid on;     
             % Add column titles only on the top row
             if wf_idx == 1
-                title(names{lc_idx}, 'FontWeight', 'bold', 'FontSize', 11);
-            end
-            
+                title(names{lc_idx} ...
+                    , 'FontWeight', 'bold', ...
+                    'FontSize', 11);
+            end         
             % Add X-axis labels only on the bottom row
             if wf_idx == n
                 xlabel('Sample Index');
@@ -184,7 +179,7 @@ end
 function plot_means(ensembles)
     % Ordered: Unipolar NRZ, Polar NRZ, Polar RZ
     names = {'Unipolar NRZ', 'Polar NRZ', 'Polar RZ'};
-    colors = {'k', 'b', 'r'}; 
+    colors = {'k', 'r', 'b'}; 
     n_waveforms = size(ensembles{1}, 1);
     
     figure; hold on;
@@ -207,47 +202,21 @@ function plot_time_autocorrelations(ensembles)
     figure; hold on; grid on;
     % Ordered: Unipolar NRZ, Polar NRZ, Polar RZ
     names = {'Unipolar NRZ', 'Polar NRZ', 'Polar RZ'};
-    colors = {'k', 'b', 'r'}; 
+    colors = {'k', 'r', 'b'}; 
     
     for i = 1:3
         wv = ensembles{i}(1,:); 
-        plot(-32:32, time_autocorr(wv, 32), 'Color', colors{i}, 'LineWidth', 1.5);
+        plot(-32:32, time_autocorr(wv, 32), ...
+            'Color', colors{i}, 'LineWidth', 1.5);
         stats_text = sprintf('%s: \\mu = %.4f', names{i}, mean(wv));
-        text(0.02, 0.98 - (i-1)*0.06, stats_text, 'Units', 'normalized', ...
-            'Color', colors{i}, 'FontSize', 10, 'FontWeight', 'bold', 'VerticalAlignment', 'top');
+        text(0.02, 0.98 - (i-1)*0.06, stats_text, ...
+            'Units', 'normalized', ...
+            'Color', colors{i}, ...
+            'FontSize', 10, ...
+            'FontWeight', 'bold', ...
+            'VerticalAlignment', 'top');
     end
     ylabel('Autocorrelation Rx'); legend(names); hold off;
-end
-function plot_psd_from_ensembles(ensembles, control_flags)
-    if nargin < 2 || isempty(sample_period), sample_period = control_flags.sample_period; end
-    max_lag = 32; 
-    N = 2 * max_lag + 1;
-    k = -(N-1)/2 : (N-1)/2;
-    freq_axis = k * (1 / (sample_period * N));
-    
-    % Ordered: Unipolar NRZ, Polar NRZ, Polar RZ
-    names = {'Unipolar NRZ', 'Polar NRZ', 'Polar RZ'};
-    colors = {'k', 'b', 'r'}; 
-    
-    figure; hold on; grid on;
-    p = zeros(1, 3);
-    for i = 1:3
-        rx = autocorr_from_t(ensembles{i}, max_lag);
-        PSD = abs(fft(rx));
-        PSD = PSD / max(PSD);
-        PSD0 = fftshift(PSD);
-        p(i) = plot(freq_axis, PSD0, 'Color', colors{i}, 'LineWidth', 1.5);
-        
-        ind = find(PSD0 == min(PSD0));
-        labels = cellstr(num2str(freq_axis(ind)', '%.2f Hz'));
-        plot(freq_axis(ind), PSD0(ind), 'ro', 'Color', colors{i}, 'MarkerSize', 10, 'LineWidth', 2);
-        text(-5 + freq_axis(ind), i * 3.8e-2 + 0.08 + PSD0(ind), labels, ...
-            'Color', colors{i}, 'FontSize', 10, 'FontWeight', 'bold');
-    end
-    legend(p, names);
-    xlabel('Frequency (Hz)');
-    ylabel('Normalized PSD');
-    title('Normalized PSD with bandwidth labeling');
 end
 function plot_ensemble_autocorr(ensemble, name , max_lag, start_times)
     % Set default values if arguments are missing
@@ -268,7 +237,7 @@ function plot_ensemble_autocorr(ensemble, name , max_lag, start_times)
         t_start = start_times(i);
         
         % Calculate autocorrelation anchored at this specific starting time
-        rx = autocorr_from_t(ensemble, max_lag, t_start);
+        rx = ensemble_autocorr(ensemble, max_lag, t_start);
         
         % Create subplot stacked vertically
         subplot(num_starts, 1, i);
@@ -289,3 +258,51 @@ function plot_ensemble_autocorr(ensemble, name , max_lag, start_times)
     end
 end
 
+function plot_psd_from_ensembles(ensembles, control_flags, sample_period)
+    if nargin < 3 || isempty(sample_period)
+        sample_period = control_flags.sample_period; 
+    end
+    max_lag = 32; 
+    N = 2 * max_lag + 1;
+    fs = 1 / sample_period;
+    freq_axis = (-(N-1)/2:(N-1)/2) * (fs / N);
+    
+    % Ordered: Unipolar NRZ, Polar NRZ, Polar RZ
+    names = {'Unipolar NRZ', 'Polar NRZ', 'Polar RZ'};
+    colors = {'k', 'r', 'b'}; 
+    
+    figure; hold on; grid on;
+    p = zeros(1, 3);
+    for i = 1:3
+        rxs = ensemble_autocorr(ensembles{i}, max_lag);
+        PSD = abs(fft(ifftshift(rxs)));
+        PSD = PSD / max(PSD);
+        PSD0 = fftshift(PSD);
+        p(i) = plot(freq_axis, PSD0, ...
+            'Color', colors{i}, 'LineWidth', 1.5);
+
+        % Find all local minima (peaks of the negative PSD)
+        % with max threshold 0.2
+        [~, all_nulls] = findpeaks(-PSD0, MinPeakHeight=-0.2);
+
+        % Identify nulls closest to the center (DC) frequency
+        center_idx   = (N + 1) / 2;
+        idx_before   = all_nulls(find(all_nulls < center_idx, 1, 'last'));
+        idx_after    = all_nulls(find(all_nulls > center_idx, 1, 'first'));
+        ind = [idx_before, idx_after];
+
+        labels = cellstr(num2str(freq_axis(ind)', '%.2f Hz'));
+        plot(freq_axis(ind), PSD0(ind), 'ro',...
+            'Color', colors{i}, ...
+            'MarkerSize', 10, 'LineWidth', 2);
+
+        text(-5 + freq_axis(ind), i * 3.8e-2 + 0.08 + PSD0(ind), ...
+            labels, 'Color', colors{i}, ...
+            'FontSize', 10, ...
+            'FontWeight', 'bold');
+    end
+    legend(p, names);
+    xlabel('Frequency (Hz)');
+    ylabel('Normalized PSD');
+    title('Normalized PSD');
+end
