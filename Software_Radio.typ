@@ -119,7 +119,7 @@ The #raw(lang: "matlab", "randi([0 1], x, y)") function returns an $x times y$ a
 == Unipolar Signaling
 For unipolar signaling, the bits `[0 1]` map to `[0 A]` to get the logic levels. The Repeat Matrix function `repmat(levels, spb, 1)` duplicates the $1 times$ `n_bits` matrix (`spb`) times vertically creating a `spb` $times$ `n_bit` matrix. The `reshape()` function transforms the matrix into a $1 times$(`spb` $dot$ `n_bits` list along the columns:
 
-A visualized example if `n_bit = 2` and `spb = 2`
+A visualized example for `n_bit = 2` and `spb = 2`
 $
   "bits: " [0 thick 1] -->^(times "A") [0 thick "A"] arrow.long.r^("repmat") mat(delim: "[", 0, "A"; 0, "A") -->^("reshape") [0 thick 0 thick "A" thick "A"]
 $
@@ -171,7 +171,7 @@ The Random Process is characterized by randomized bits and a phase shift impleme
 
 For a given random process $x(t)$, an experiment generates a *Realization* for the process. @desmos showcases an interactive polar NRZ random process which can be tried #link("https://www.desmos.com/calculator/bxxjfclpyi")[Here.] Clicking the #text(fill: rgb("#00005b"))[shuffle] button generates new realizations.
 #figure(image("./images/desmos2.png"), caption: "Polar NRZ Random Process.")<desmos>
-Multiple of such realizations can be simulated to construct an *Ensemble* of random variables that can be used to calculate the statistical properties of the random process.
+Multiple such realizations can be simulated to construct an *Ensemble* of random variables that can be used to calculate the statistical properties of the random process.
 
 `generate_ensemble()` acts as the core engine for generating a random process, using a flexible input system where `nargin` and `isempty` checks and prioritize user-provided arguments over the default values stored in `control_flags`.
 
@@ -227,7 +227,7 @@ To make things cleaner, a function called `generate_all_ensembles()` is implemen
   ```
 ])
 
-== visualizing waveforms
+== visualizing Waveforms
 
 
 `plot_sample_waveforms()` displays the first five waveforms of each ensemble. its implementation is not shown here to keep the focus on the core of simulation logic, though it is available in the full code at the end of the report.
@@ -349,7 +349,7 @@ function rx = ensemble_autocorr(ensemble, max_lag, t_start)
 end
 ```]
 
-Then function `plot_ensemble_autocorr` takes a specific ensemble and it's line code name and a vector of starting times and plots the ensemble auto correlation functions for each starting time and stack them vertically. If start_times vector was not given it uses a default set of [1, 101, 354].
+Then function `plot_ensemble_autocorr` takes a specific ensemble and it s line code name and a vector of starting times and plots the ensemble auto correlation functions for each starting time and stack them vertically. If start_times vector was not given it uses a default set of [1, 101, 354].
 
 #codeblock[```matlab
 function plot_ensemble_autocorr(ensemble, name , max_lag, start_times)
@@ -409,7 +409,7 @@ plot_ensemble_autocorr(ensembles_5h{3}, "Polar RZ");
     }),
   ),
 )<autocorr>
-In @autocorr, the autocorrelation function is calculated for varying start times over varying lags. It can be seen that $R_x (t,tau)$ doesn't depend on the initial time and only depends on the time difference ($R_x (t,tau) = R_x (tau)$). Additionally, since $m_x$ was calculated to be a constant over time, the random process is *Wide Sense Stationary (WSS)*. That can also be verified by observing how the autocorrelation is an even function.
+In @autocorr, the autocorrelation function is calculated for varying start times over varying lags. It can be seen that $R_x (t,tau)$ does not depend on the initial time and only depends on the time difference ($R_x (t,tau) = R_x (tau)$). Additionally, since $m_x$ was calculated to be a constant over time, the random process is *Wide Sense Stationary (WSS)*. That can also be verified by observing how the autocorrelation is an even function.
 
 == The Time Mean and Autocorrelation of One Waveform
 For a single realization $x_i (t)$, the time mean and autocorrelation both operate on a single $1 times 800$ row of the ensemble matrix, producing a scalar mean and a $1 times (tau_"max" + 1)$ autocorrelation vector respectively.
@@ -419,7 +419,7 @@ $
   chevron.l x(t) dot x(t+tau) chevron.r = 1/(L_s - tau) sum_(t=1)^(L_s - tau) x_i (t) dot x_i (t + tau) quad #cite(<lec4_s23>)
 $
 
-the `time_autocorr` function was implemented throught the following code
+the `time_autocorr` function was implemented through the following code
 
 #codeblock[```matlab
 function rx_time = time_autocorr(waveform, max_lag)
@@ -515,7 +515,7 @@ This characterizes the random process as *Ergodic*, meaning that the process sta
 As established in section 4.2, the considered processes are wide-sense stationary (WSS). Consequently, their power spectral density (PSD) is defined as the Fourier transform of the autocorrelation function.
 $ S_X (f) = cal(F.T.){R_X (tau)} quad #cite(<lec4_s16>) $
 In practice, the autocorrelation function is available only for a finite number of discrete lags, sampled with a period $T_S$. Therefore, the continuous Fourier transform is approximated using the discrete Fourier transform (DFT), which is efficiently computed via the Fast Fourier Transform (FFT). 
-The PSD is computed for each line coding scheme using this approach, and the frequency axis is scaled according to the sampling period $T_S = 10 \ms$ The resulting spectra are shown in Figure 8.”
+The PSD is computed for each line coding scheme using this approach, and the frequency axis is scaled according to the sampling period $T_S = 10 \ms$ The resulting spectra are shown in @psd.
  
 #figure(
   caption: [Normalized PSD for each line code. The spectrum is obtained via FFT of the autocorrelation function ($R_x$) limited to $ plus.minus 32$ lags (Left), $plus.minus 788$ (Right)],
