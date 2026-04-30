@@ -257,31 +257,9 @@ The statistical mean is the expected value of the random process at each time in
 
 $ m_x (t) = E[x(t)] = 1/N sum_(i=1)^(N) x_i(t) quad #cite(<lec4_s6>) $ <ensemble_mean>
 
-This yields a $1 times 800$ vector — one mean value per time sample. @means shows how the mean is nearly constant across time with a smaller variance over a larger ensemble.
+This yields a $1 times 800$ vector — one mean value per time sample. 
 
 A function called `plot_means()` was implemented. It takes a cell array of ensembles then calculates the mean and plots it for every ensemble
-
-#codeblock([```matlab
-ens_5h = generate_all_ensembles(500);
-plot_means(ens_5h)
-
-ens_5k = generate_all_ensembles(5000);
-plot_means(ens_5k)
-```])
-
-
-#figure(
-  caption: [The statistical mean of each line-encoding for 500 and 5k waveforms.],
-  block(
-    scale(095%, {
-      set text(size: 0.75em)
-      grid(
-        columns: 2,
-        image("./images/means_5h.png"), image("./images/means_5k.png"),
-      )
-    }),
-  ),
-)<means>
 
 #codeblock[```matlab
 
@@ -312,6 +290,34 @@ function plot_means(ensembles)
 end
 ```]
 
+#pagebreak()
+we then run the following code to see the results
+
+#codeblock([```matlab
+ens_5h = generate_all_ensembles(500);
+plot_means(ens_5h)
+
+ens_5k = generate_all_ensembles(5000);
+plot_means(ens_5k)
+```])
+
+
+#figure(
+  caption: [The statistical mean of each line-encoding for 500 and 5k waveforms.],
+  block(
+    scale(095%, {
+      set text(size: 0.75em)
+      grid(
+        columns: 2,
+        image("./images/means_5h.png"), image("./images/means_5k.png"),
+      )
+    }),
+  ),
+)<means>
+
+@means shows how the mean is *nearly constant* across time with a smaller variance over a larger ensemble.
+
+
 == The Ensemble Autocorrelation Function
 
 The ensemble autocorrelation function says how much a certain reading influences the next one separated by a lag $tau$:
@@ -319,45 +325,11 @@ $
   R_x (t,tau) = E[x(t) dot x(t+tau)] = 1/N sum_(i=1)^(N) 1/(L_s - tau) sum_(t=1)^(L_s - tau) x_i (t) dot x_i (t + tau) quad #cite(<lec4_s7>)
 $
 
-In @autocorr, the autocorrelation function is calculated for varying start times over varying lags. It can be seen that $R_x (t,tau)$ doesn't depend on the initial time and only depends on the time difference ($R_x (t,tau) = R_x (tau)$). Additionally, since $m_x$ was calculated to be a constant over time, the random process is *Wide Sense Stationary (WSS)*. That can also be verified by observing how the autocorrelation is an even function.
-
-#codeblock[```matlab
-plot_ensemble_autocorr(ensembles_5h{1}, "Unipolar NRZ");
-plot_ensemble_autocorr(ensembles_5h{2}, "Polar NRZ");
-plot_ensemble_autocorr(ensembles_5h{3}, "Polar RZ");
-```]
-
-#figure(
-  caption: [Statistical Autocorrelation of each line-encoding for different start times.],
-  block(
-    scale(095%, {
-      set text(size: 0.75em)
-      grid(
-        columns: 3,
-        column-gutter: -2.9em,
-        image("./images/autocorr_unrz.png"), image("./images/autocorr_pnrz.png"), image("./images/autocorr_rz.png"),
-        [a) Unipolar NRZ Autocorrelation #v(-0.5em) ($R_x (0)=8$, Roll-off$=4$\@8) ],
-        [b) Polar NRZ Autocorrelation #v(-0.5em) ($R_x (0)=16$, Roll-off$=0$\@8) ],
-        [c) Polar RZ Autocorrelation #v(-0.5em) ($R_x (0)=8$, Roll-off$=0$\@4) ],
-      )
-    }),
-  ),
-)<autocorr>
-
-
-
-The function `ensemble_autocorr` calculates the autocorrelation function ($R_x$) for a signal ensemble by averaging across both time and all realizations (the statistical ensemble).
-
-Sub-sampling: It isolates a portion of the ensemble starting from t_start to focus the analysis on a specific time window.
-
-Lag Loop: It iterates through a range of time offsets from -max_lag to +max_lag.Time-Shifting: For each lag $k$, it multiplies the original ensemble by a shifted version of itself.
-
-Double Averaging: It uses `mean(mean(product, 2))` to compute the average over all samples (time average) and all rows (ensemble average).
 
 
 
 
-
+The function `ensemble_autocorr` calculates the autocorrelation function ($R_x$) for a signal ensemble by averaging across both time and all realizations (the statistical ensemble). First, It isolates a portion of the ensemble starting from t_start to the end to focus the analysis on a specific time window. Then, It iterates through a range of time offsets from -max_lag to +max_lag. For each lag $k$, it multiplies the original ensemble by a shifted version of itself. Then it double averages to compute the average over all samples (time average) and all rows (ensemble average).
 
 #codeblock[```matlab
 function rx = ensemble_autocorr(ensemble, max_lag, t_start)
@@ -413,6 +385,31 @@ function plot_ensemble_autocorr(ensemble, name , max_lag, start_times)
 ```]
 
 
+we then run the following code to see the results.
+
+#codeblock[```matlab
+plot_ensemble_autocorr(ensembles_5h{1}, "Unipolar NRZ");
+plot_ensemble_autocorr(ensembles_5h{2}, "Polar NRZ");
+plot_ensemble_autocorr(ensembles_5h{3}, "Polar RZ");
+```]
+
+#figure(
+  caption: [Statistical Autocorrelation of each line-encoding for different start times.],
+  block(
+    scale(095%, {
+      set text(size: 0.75em)
+      grid(
+        columns: 3,
+        column-gutter: -2.9em,
+        image("./images/autocorr_unrz.png"), image("./images/autocorr_pnrz.png"), image("./images/autocorr_rz.png"),
+        [a) Unipolar NRZ Autocorrelation #v(-0.5em) ($R_x (0)=8$, Roll-off$=4$\@8) ],
+        [b) Polar NRZ Autocorrelation #v(-0.5em) ($R_x (0)=16$, Roll-off$=0$\@8) ],
+        [c) Polar RZ Autocorrelation #v(-0.5em) ($R_x (0)=8$, Roll-off$=0$\@4) ],
+      )
+    }),
+  ),
+)<autocorr>
+In @autocorr, the autocorrelation function is calculated for varying start times over varying lags. It can be seen that $R_x (t,tau)$ doesn't depend on the initial time and only depends on the time difference ($R_x (t,tau) = R_x (tau)$). Additionally, since $m_x$ was calculated to be a constant over time, the random process is *Wide Sense Stationary (WSS)*. That can also be verified by observing how the autocorrelation is an even function.
 
 == The Time Mean and Autocorrelation of One Waveform
 For a single realization $x_i (t)$, the time mean and autocorrelation both operate on a single $1 times 800$ row of the ensemble matrix, producing a scalar mean and a $1 times (tau_"max" + 1)$ autocorrelation vector respectively.
@@ -556,77 +553,18 @@ Analytically, the $S_x (f)$ is given as a $sinc^2()$ function for each encoding 
 )
 
 #codeblock[```matlab
-function plot_psd_from_ensembles(ensembles, control_flags, sample_period)
-    if nargin < 3 || isempty(sample_period)
-        sample_period = control_flags.sample_period;
-    end
-    max_lag = 32;
-    N = 2 * max_lag + 1;
-    fs = 1 / sample_period;
-    freq_axis = (-(N-1)/2:(N-1)/2) * (fs / N);
-
-    % Ordered: Unipolar NRZ, Polar NRZ, Polar RZ
-    names = {'Unipolar NRZ', 'Polar NRZ', 'Polar RZ'};
-    colors = {'k', 'r', 'b'};
-
-    figure; hold on; grid on;
-    p = zeros(1, 3);
-    for i = 1:3
-        rxs = ensemble_autocorr(ensembles{i}, max_lag);
-        PSD = abs(fft(ifftshift(rxs)));
-        PSD = PSD / max(PSD);
-        PSD0 = fftshift(PSD);
-        p(i) = plot(freq_axis, PSD0, ...
-            'Color', colors{i}, 'LineWidth', 1.5);
-
-        % Find all local minima (peaks of the negative PSD)
-        % with max threshold 0.2
-        [~, all_nulls] = findpeaks(-PSD0, MinPeakHeight=-0.2);
-
-        % Identify nulls closest to the center (DC) frequency
-        center_idx   = (N + 1) / 2;
-        idx_before   = all_nulls(find(all_nulls < center_idx, 1, 'last'));
-        idx_after    = all_nulls(find(all_nulls > center_idx, 1, 'first'));
-        ind = [idx_before, idx_after];
-
-        labels = cellstr(num2str(freq_axis(ind)', '%.2f Hz'));
-        plot(freq_axis(ind), PSD0(ind), 'ro',...
-            'Color', colors{i}, ...
-            'MarkerSize', 10, 'LineWidth', 2);
-
-        text(-5 + freq_axis(ind), i * 3.8e-2 + 0.08 + PSD0(ind), ...
-            labels, 'Color', colors{i}, ...
-            'FontSize', 10, ...
-            'FontWeight', 'bold');
-    end
-    legend(p, names);
-    xlabel('Frequency (Hz)');
-    ylabel('Normalized PSD');
-    title('Normalized PSD');
-end
-
-```]
-
-// = Conclusion
-// #pagebreak()
-
-#pagebreak()
-
-= Full MATLAB code
-
-#codeblock[```matlab
 %% ========================================================================
 % Cairo University | Faculty of Engineering
 % Introduction to Communication Systems
 % Project 2
 % Team 11
-% Submitted to Eng. Mohammed Khaled
+% Submitted to Eng. Mohammed Khaled 
 %
-% Description:
-% This script generates, visualizes, and analyzes WSS random processes
+% Description: 
+% This script generates, visualizes, and analyzes WSS random processes 
 % using Unipolar NRZ, Polar NRZ, and Polar RZ line codes.
 %
-% NOTE: Please run this script section by section (using 'Run Section')
+% NOTE: Please run this script section by section (using 'Run Section') 
 %       to avoid triggering a fountain of plots all at once.
 % =========================================================================
 
@@ -662,7 +600,7 @@ plot_time_autocorrelations(ensembles_5h);
 %% Plot PSD
 plot_psd_from_ensembles(ensembles_5h, control_flags);
 
-% ==== Execution End ====
+% ==== Excution End ====
 
 %% Functions
 
@@ -678,7 +616,7 @@ function ensembles = generate_all_ensembles(control_flags, n_waveforms, n_bits, 
     ens_uz = generate_ensemble(@unipolar_nrz, control_flags, n_waveforms, n_bits, A, spb);
     ens_pz = generate_ensemble(@polar_nrz, control_flags, n_waveforms, n_bits, A, spb);
     ens_rz = generate_ensemble(@polar_rz, control_flags, n_waveforms, n_bits, A, spb);
-
+    
     ensembles = {ens_uz, ens_pz, ens_rz};
 end
 function ensemble = generate_ensemble(line_code_func, control_flags, n_waveforms, n_bits, A, spb)
@@ -687,15 +625,15 @@ function ensemble = generate_ensemble(line_code_func, control_flags, n_waveforms
     if nargin < 5 || isempty(A), A = control_flags.A; end
     if nargin < 4 || isempty(n_bits), n_bits = control_flags.n_bits; end
     if nargin < 3 || isempty(n_waveforms), n_waveforms = control_flags.n_waveforms; end
-
+    
     % Direct allocation for memory efficiency
     waveform_length = n_bits * spb;
     ensemble = zeros(n_waveforms, waveform_length);
-
+    
     for i = 1:n_waveforms
         random_bit_stream = randi([0 1], 1, n_bits);
         raw_wf = line_code_func(random_bit_stream, A, spb);
-
+        
         % Apply random phase by circular shift and store directly in matrix
         phase = randi([0, spb-1]);
         ensemble(i, :) = circshift(raw_wf, [0, -phase]);
@@ -715,16 +653,16 @@ function waveform = polar_rz(bits, A, spb)
     half_spb = floor(spb / 2);
     levels = (2*bits(:)' - 1) * A;
     raw_matrix = repmat(levels, spb, 1);
-
+    
     % Zero out the second half of each bit period to make it Return-to-Zero
-    raw_matrix(half_spb+1:end, :) = 0;
-
+    raw_matrix(half_spb+1:end, :) = 0; 
+    
     waveform = reshape(raw_matrix, 1, []);
 end
 
 % Analysis Functions
 function rx = ensemble_autocorr(ensemble, max_lag, t_start)
-    if nargin < 3 || isempty(t_start), t_start = 1; end
+    if nargin < 3 || isempty(t_start), t_start = 1; end 
     sub = ensemble(:, t_start:end);
     [~, n_samples] = size(sub);
     rx = zeros(1, 2*max_lag+1);
@@ -734,18 +672,23 @@ function rx = ensemble_autocorr(ensemble, max_lag, t_start)
         else
             product = sub(:, -k+1:n_samples) .* sub(:, 1:n_samples+k);
         end
-        rx(k+max_lag+1) = mean(mean(product, 2));
+        N = size(product, 1); % Number of Realizations
+        rx(k+max_lag+1) = sum( sum(product, 2)/size(product,2) ) / N;
     end
 end
 function rx_time = time_autocorr(waveform, max_lag)
     n = length(waveform);
     rx_time = zeros(1, 2*max_lag + 1);
     for k = -max_lag:max_lag
+        % Define the overlapping segments
         if k >= 0
-            rx_time(k+max_lag+1) = mean(waveform(1:n-k) .* waveform(k+1:n));
+            seg1 = waveform(1:n-k);
+            seg2 = waveform(k+1:n);
         else
-            rx_time(k+max_lag+1) = mean(waveform(-k+1:n) .* waveform(1:n+k));
+            seg1 = waveform(-k+1:n);
+            seg2 = waveform(1:n+k);
         end
+        rx_time(k+max_lag+1) = sum(seg1 .* seg2) / length(seg1);
     end
 end
 
@@ -756,21 +699,21 @@ function plot_sample_waveforms(ensembles, control_flags, n_show, samples_to_show
     % Default arguments
     if nargin < 3 || isempty(n_show), n_show = 5; end
     if nargin < 4 || isempty(samples_to_show), samples_to_show = 240; end
-
+    
     names = {'Unipolar NRZ', 'Polar NRZ', 'Polar RZ'};
     num_line_codes = length(ensembles);
-
+    
     % Create a large figure to fit the grid
     figure('Name', 'Sample Waveforms');
-
+    
     for lc_idx = 1:num_line_codes
         current_ens = ensembles{lc_idx};
         % Ensure we don't try to show more waveforms/samples than exist
         n = min(n_show, size(current_ens, 1));
         max_samples = min(samples_to_show, size(current_ens, 2));
-
-        y_limits = [-control_flags.A-1, control_flags.A+1]; % Find y-limits
-
+        
+        y_limits = [-control_flags.A-1, control_flags.A+1]; % Find y-limits 
+        
         for wf_idx = 1:n
             subplot_idx = (wf_idx - 1) * num_line_codes + lc_idx;
             subplot(n, num_line_codes, subplot_idx);
@@ -779,13 +722,13 @@ function plot_sample_waveforms(ensembles, control_flags, n_show, samples_to_show
                 'LineWidth', 1.5, ...
                 'Color', '#0072BD');
             ylim(y_limits);
-            grid on;
+            grid on;     
             % Add column titles only on the top row
             if wf_idx == 1
                 title(names{lc_idx} ...
                     , 'FontWeight', 'bold', ...
                     'FontSize', 11);
-            end
+            end         
             % Add X-axis labels only on the bottom row
             if wf_idx == n
                 xlabel('Sample Index');
@@ -796,16 +739,17 @@ end
 function plot_means(ensembles)
     % Ordered: Unipolar NRZ, Polar NRZ, Polar RZ
     names = {'Unipolar NRZ', 'Polar NRZ', 'Polar RZ'};
-    colors = {'k', 'r', 'b'};
+    colors = {'k', 'r', 'b'}; 
     n_waveforms = size(ensembles{1}, 1);
-
+    
     figure; hold on;
     for i = 1:length(ensembles)
         current_ens = ensembles{i};
-        ens_mean = mean(current_ens, 1);
-        average = mean(ens_mean);
-        variance = var(ens_mean);
+        ens_mean = sum(current_ens, 1)/size(current_ens, 1);
 
+        average = sum(ens_mean)/length(ens_mean);
+        variance = var(ens_mean);
+        
         plot(ens_mean, 'Color', colors{i}, 'LineWidth', 1.5, 'DisplayName', names{i});
         stats_text = sprintf('%s: \\mu = %.4f, \\sigma^2 = %.4e', names{i}, average, variance);
         text(0.02, 0.98 - (i-1)*0.06, stats_text, 'Units', 'normalized', ...
@@ -819,13 +763,13 @@ function plot_time_autocorrelations(ensembles)
     figure; hold on; grid on;
     % Ordered: Unipolar NRZ, Polar NRZ, Polar RZ
     names = {'Unipolar NRZ', 'Polar NRZ', 'Polar RZ'};
-    colors = {'k', 'r', 'b'};
-
+    colors = {'k', 'r', 'b'}; 
+    
     for i = 1:3
-        wv = ensembles{i}(1,:);
+        wv = ensembles{i}(1,:); 
         plot(-32:32, time_autocorr(wv, 32), ...
             'Color', colors{i}, 'LineWidth', 1.5);
-        stats_text = sprintf('%s: \\mu = %.4f', names{i}, mean(wv));
+        stats_text = sprintf('%s: \\mu = %.4f', names{i}, sum(wv)/length(wv));
         text(0.02, 0.98 - (i-1)*0.06, stats_text, ...
             'Units', 'normalized', ...
             'Color', colors{i}, ...
@@ -839,35 +783,35 @@ function plot_ensemble_autocorr(ensemble, name , max_lag, start_times)
     % Set default values if arguments are missing
     if nargin < 3 || isempty(max_lag), max_lag = 16; end
     if nargin < 4 || isempty(start_times), start_times = [1, 101, 354]; end
-
+    
     % Create the lag vector for the x-axis
     lags = -max_lag:max_lag;
     num_starts = length(start_times);
-
+    
     % Initialize the figure window and automatically center it
     fig = figure('Name', name);
-
+    
     % Pre-define a color palette to cycle through
     colors = {'b', 'r', 'g', 'm', 'c', 'k'};
-
+    
     for i = 1:num_starts
         t_start = start_times(i);
-
+        
         % Calculate autocorrelation anchored at this specific starting time
         rx = ensemble_autocorr(ensemble, max_lag, t_start);
-
+        
         % Create subplot stacked vertically
         subplot(num_starts, 1, i);
-
+        
         % Pick a color, looping back to the start if num_starts > length(colors)
         c_idx = mod(i - 1, length(colors)) + 1;
-
+        
         % Plot the data
         plot(lags, rx, 'Color', colors{c_idx}, 'LineWidth', 2);
         ylabel('R_x', 'FontWeight', 'bold');
         title(sprintf('Starting Time t_0 = %d', t_start - 1));
         grid on;
-
+        
         % Only add the X-label to the very bottom subplot for cleaner visuals
         if i == num_starts
             xlabel('Lag', 'FontWeight', 'bold');
@@ -877,17 +821,17 @@ end
 
 function plot_psd_from_ensembles(ensembles, control_flags, sample_period)
     if nargin < 3 || isempty(sample_period)
-        sample_period = control_flags.sample_period;
+        sample_period = control_flags.sample_period; 
     end
-    max_lag = 32;
+    max_lag = 32; 
     N = 2 * max_lag + 1;
     fs = 1 / sample_period;
     freq_axis = (-(N-1)/2:(N-1)/2) * (fs / N);
-
+    
     % Ordered: Unipolar NRZ, Polar NRZ, Polar RZ
     names = {'Unipolar NRZ', 'Polar NRZ', 'Polar RZ'};
-    colors = {'k', 'r', 'b'};
-
+    colors = {'k', 'r', 'b'}; 
+    
     figure; hold on; grid on;
     p = zeros(1, 3);
     for i = 1:3
@@ -923,6 +867,7 @@ function plot_psd_from_ensembles(ensembles, control_flags, sample_period)
     ylabel('Normalized PSD');
     title('Normalized PSD');
 end
+
 
 ```]
 #pagebreak()
