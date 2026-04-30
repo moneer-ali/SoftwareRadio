@@ -1,5 +1,5 @@
 #import "lib.typ": academic-document
-
+#import "@preview/cetz:0.3.1": canvas, draw
 #set page(fill: rgb("#fff"))
 #show raw: it => {
   set text(size: 1.1em)
@@ -9,6 +9,7 @@
     it
   }
 }
+
 
 #let codeblock(body) = {
   show raw: it => {
@@ -46,7 +47,6 @@
 ``
 
 #set text(font: "Times New Roman", size: 12pt)
-#set par(first-line-indent: 1em)
 // #context text.size
 // --- Front page / document metadata ---
 // #v(-2em)
@@ -68,7 +68,7 @@
   page-break-after-sections: false,
   // abstract: include "sections/0-abstract.typ",
 )
-
+#set par(first-line-indent: 0pt)
 
 
 = Introduction
@@ -230,9 +230,7 @@ To make things cleaner, a function called `generate_all_ensembles()` is implemen
 == visualizing waveforms
 
 
-A function called `plot_sample_waveforms()` which takes the all_ensembles and generates a plot of the first 5 waveforms of each ensemble was implemented but it's not shown here as it has nothing to do with the core logic of the simulation you can check it in the Full code.
-
-The function is used in the following code to plot the first 5 waveforms of each ensemble
+`plot_sample_waveforms()` displays the first five waveforms of each ensemble. its implementation is not shown here to keep the focus on the core of simulation logic, though it is available in the full code at the end of the report.
 
 #codeblock[```MATLAB
 
@@ -294,18 +292,19 @@ function plot_means(ensembles)
 
   figure; hold on;
   for i = 1:length(ensembles)
-      current_ens = ensembles{i};
-      ens_mean = mean(current_ens, 1);
-      average = mean(ens_mean);
-      variance = var(ens_mean);
+    current_ens = ensembles{i};
+    ens_mean = sum(current_ens, 1)/size(current_ens, 1);
 
-      plot(ens_mean, 'Color', colors{i},...
-       'LineWidth', 1.5, 'DisplayName', names{i});
-      stats_text = sprintf('%s: \\mu = %.4f, \\sigma^2 = %.4e', names{i}, average, variance);
-      text(0.02, 0.98 - (i-1)*0.06,...
-       stats_text, 'Units', 'normalized', ...
-          'Color', colors{i}, 'FontSize', 10,...
-           'FontWeight', 'bold', 'VerticalAlignment', 'top');
+    average = sum(ens_mean)/length(ens_mean);
+    variance = var(ens_mean);
+
+    plot(ens_mean, 'Color', colors{i},...
+      'LineWidth', 1.5, 'DisplayName', names{i});
+    stats_text = sprintf('%s: \\mu = %.4f, \\sigma^2 = %.4e', names{i}, average, variance);
+    text(0.02, 0.98 - (i-1)*0.06,...
+      stats_text, 'Units', 'normalized', ...
+        'Color', colors{i}, 'FontSize', 10,...
+          'FontWeight', 'bold', 'VerticalAlignment', 'top');
   end
   ylim([-1, 4]); xlabel('Samples'); ylabel('Ensemble Mean Amplitude');
   title(sprintf('Ensemble Means and Variance (%d waveforms)', n_waveforms));
@@ -354,6 +353,12 @@ Sub-sampling: It isolates a portion of the ensemble starting from t_start to foc
 Lag Loop: It iterates through a range of time offsets from -max_lag to +max_lag.Time-Shifting: For each lag $k$, it multiplies the original ensemble by a shifted version of itself.
 
 Double Averaging: It uses `mean(mean(product, 2))` to compute the average over all samples (time average) and all rows (ensemble average).
+
+
+
+
+
+
 #codeblock[```matlab
 function rx = ensemble_autocorr(ensemble, max_lag, t_start)
     if nargin < 3 || isempty(t_start), t_start = 1; end
@@ -366,7 +371,8 @@ function rx = ensemble_autocorr(ensemble, max_lag, t_start)
         else
             product = sub(:, -k+1:n_samples) .* sub(:, 1:n_samples+k);
         end
-        rx(k+max_lag+1) = mean(mean(product, 2));
+        N = size(product, 1); % Number of Realizations
+        rx(k+max_lag+1) = sum( sum(product, 2)/size(product,2) ) / N;
     end
 end
 ```]
@@ -446,19 +452,36 @@ plot_time_autocorrelations(ensembles_5h_100kb);
 
 This characterizes the random process as *Ergodic*, meaning that the process statistics can be characterized through a single sufficiently long observation window.
 
+the `time_autocorr` function was implemented throught the following code
+
 #codeblock[```matlab
 function rx_time = time_autocorr(waveform, max_lag)
   n = length(waveform);
   rx_time = zeros(1, 2*max_lag + 1);
   for k = -max_lag:max_lag
-    if k >= 0
-      rx_time(k+max_lag+1) = mean(waveform(1:n-k) .* waveform(k+1:n));
-    else
-      rx_time(k+max_lag+1) = mean(waveform(-k+1:n) .* waveform(1:n+k));
+    for k = -max_lag:max_lag
+        % Define the overlapping segments
+        if k >= 0
+            seg1 = waveform(1:n-k);
+            seg2 = waveform(k+1:n);
+        else
+            seg1 = waveform(-k+1:n);
+            seg2 = waveform(1:n+k);
+        end
+        rx_time(k+max_lag+1) = sum(seg1 .* seg2) / length(seg1);
     end
   end
 end
+```]
+for each k we multiply the the elements in the overlaping area and then get the mean by suming them and dividing by the length.
 
+the overlaping area is 
+#figure(caption: [Visualization of the overlapping area and the starting and ending indecies of `seg1` and `seg2` when $k<0$ and $k >= 0$.], image(
+  "./images/explaining/overlaping.png",
+  width: 120%,
+))<overlap_ex>
+
+#codeblock[```matlab
 function plot_time_autocorrelations(ensembles)
     figure; hold on; grid on;
     % Ordered: Unipolar NRZ, Polar NRZ, Polar RZ
@@ -482,25 +505,29 @@ end
 ```]
 #pagebreak()
 == Bandwidth of the Transmitted Signal
-The power spectral density is obtained as the Fourier transform of the autocorrelation function. Applying the FFT gives the PSD in @psd, assuming that each sample corresponds to a time window of $10"ms"$.
 
+As established in section 4.2, the considered processes are wide-sense stationary (WSS). Consequently, their power spectral density (PSD) is defined as the Fourier transform of the autocorrelation function.
+$ S_X (f) = cal(F.T.){R_X (tau)} quad #cite(<lec4_s16>) $
+In practice, the autocorrelation function is available only for a finite number of discrete lags, sampled with a period $T_S$. Therefore, the continuous Fourier transform is approximated using the discrete Fourier transform (DFT), which is efficiently computed via the Fast Fourier Transform (FFT). 
+The PSD is computed for each line coding scheme using this approach, and the frequency axis is scaled according to the sampling period $T_S = 10 \ms$ The resulting spectra are shown in Figure 8.”
+ 
 #figure(
-  caption: [The PSD of each line codes with the first null marked.],
-  image("./images/PSD.png", width: 80%),
+  caption: [Normalized PSD for each line code. The spectrum is obtained via FFT of the autocorrelation function ($R_x$) limited to $ plus.minus 32$ lags (Left), $plus.minus 788$ (Right)],
+  grid(
+    columns: (1fr, 1fr), // Two columns of equal fractional width
+    gutter: 1em,         // Space between the images
+    image("images/PSD.png", width: 100%),
+    image("images/PSD_798_samples.png", width: 100%),
+  )
 )<psd>
 
-For the bandwidth, we choose the point of first zero of the $S_x (f)$ function giving the baseband bandwidth shown in the figure. The passband bandwidth is given by:
-$
-  "Passband BW" = cases(
-    2 times 12.31 =24.62 "Hz for Unipolar NRZ",
-    2 times 12.31 =24.62 "Hz for Polar NRZ",
-    2 times 24.62 =49.24 "Hz for Polar RZ",
-  )
-$
+The left plot corresponds to an autocorrelation window of ±32 lags, while the right plot uses a much larger window (±788 lags). It can be observed that the PSD obtained using the shorter window is smoother and more stable, whereas the longer window introduces noticeable fluctuations.
 
-Analytically, the $S_x (f)$ is given as a $sinc^2()$ function for each encoding since it is the transform of a convolved $"rect"()$. Accordingly, the first zero is given by $1/T_p$ where $T_p=80"ms"$ is the pulse width. This gives a passband bandwidth of $2/T_p=25"Hz"$ aligning with the NRZ encodings.
+ This behavior is due to the reduced reliability of autocorrelation estimates at larger lags, where fewer samples contribute to the averaging process, resulting in increased noise in the PSD. Therefore, limiting the autocorrelation to ±32 lags provides a good balance between capturing the essential spectral characteristics and maintaining numerical stability.
 
-The discrepancy in the RZ encoding happens since it only transmits data for half the pulse. Effectively having a $T_p$ of $40"ms"$ and double the bandwidth of NRZ encodings.
+The bandwidth is defined as the frequency of the first spectral null. In practice, due to finite-length autocorrelation and numerical estimation effects, the PSD does not reach an exact zero at the null locations. Therefore, the first null is identified as the first local minimum after the main lobe, which provides a reliable estimate of the baseband bandwidth as shown in @psd (Left).
+
+Analytically, the $S_x (f)$ is given as a $sinc^2()$ function for each encoding since it is the transform of a convolved $"rect"()$. Accordingly, the first zero is given by $1/T_p$ where $T_p=80"ms"$ is the pulse width. The discrepancy in the RZ encoding happens since it only transmits data for half the pulse. Effectively having a $T_p$ of $40"ms"$ and double the bandwidth of NRZ encodings.
 
 
 

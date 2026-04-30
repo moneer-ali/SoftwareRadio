@@ -117,18 +117,23 @@ function rx = ensemble_autocorr(ensemble, max_lag, t_start)
         else
             product = sub(:, -k+1:n_samples) .* sub(:, 1:n_samples+k);
         end
-        rx(k+max_lag+1) = mean(mean(product, 2));
+        N = size(product, 1); % Number of Realizations
+        rx(k+max_lag+1) = sum( sum(product, 2)/size(product,2) ) / N;
     end
 end
 function rx_time = time_autocorr(waveform, max_lag)
     n = length(waveform);
     rx_time = zeros(1, 2*max_lag + 1);
     for k = -max_lag:max_lag
+        % Define the overlapping segments
         if k >= 0
-            rx_time(k+max_lag+1) = mean(waveform(1:n-k) .* waveform(k+1:n));
+            seg1 = waveform(1:n-k);
+            seg2 = waveform(k+1:n);
         else
-            rx_time(k+max_lag+1) = mean(waveform(-k+1:n) .* waveform(1:n+k));
+            seg1 = waveform(-k+1:n);
+            seg2 = waveform(1:n+k);
         end
+        rx_time(k+max_lag+1) = sum(seg1 .* seg2) / length(seg1);
     end
 end
 
@@ -185,8 +190,9 @@ function plot_means(ensembles)
     figure; hold on;
     for i = 1:length(ensembles)
         current_ens = ensembles{i};
-        ens_mean = mean(current_ens, 1);
-        average = mean(ens_mean);
+        ens_mean = sum(current_ens, 1)/size(current_ens, 1);
+
+        average = sum(ens_mean)/length(ens_mean);
         variance = var(ens_mean);
         
         plot(ens_mean, 'Color', colors{i}, 'LineWidth', 1.5, 'DisplayName', names{i});
@@ -208,7 +214,7 @@ function plot_time_autocorrelations(ensembles)
         wv = ensembles{i}(1,:); 
         plot(-32:32, time_autocorr(wv, 32), ...
             'Color', colors{i}, 'LineWidth', 1.5);
-        stats_text = sprintf('%s: \\mu = %.4f', names{i}, mean(wv));
+        stats_text = sprintf('%s: \\mu = %.4f', names{i}, sum(wv)/length(wv));
         text(0.02, 0.98 - (i-1)*0.06, stats_text, ...
             'Units', 'normalized', ...
             'Color', colors{i}, ...
