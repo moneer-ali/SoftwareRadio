@@ -415,17 +415,73 @@ function plot_ensemble_autocorr(ensemble, name , max_lag, start_times)
 
 
 == The Time Mean and Autocorrelation of One Waveform
-For a single realization $x_i (t)$, the time mean and autocorrelation both operate on a single $1 times 800$ row of the ensemble matrix, producing a scalar mean and a $1 times (tau_"max" + 1)$ autocorrelation vector respectively as shows in @timestat1.
+For a single realization $x_i (t)$, the time mean and autocorrelation both operate on a single $1 times 800$ row of the ensemble matrix, producing a scalar mean and a $1 times (tau_"max" + 1)$ autocorrelation vector respectively.
 
 $
   chevron.l x(t) chevron.r = overline(x)_i = 1/L_s sum_(t=1)^(L_s) x_i (t) \
   chevron.l x(t) dot x(t+tau) chevron.r = 1/(L_s - tau) sum_(t=1)^(L_s - tau) x_i (t) dot x_i (t + tau) quad #cite(<lec4_s23>)
 $
 
-While similar, the time-based autocorrelation differs from the ensemble $R_x$ in @autocorr.#linebreak()
-#h(1em) However, increasing the number of bits makes it converge to the ensemble $R_x$. @timestat2 shows the calculation for the mean and autocorrelation of a waveform generated with 100 kilobits.
+the `time_autocorr` function was implemented throught the following code
 
 #codeblock[```matlab
+function rx_time = time_autocorr(waveform, max_lag)
+  n = length(waveform);
+  rx_time = zeros(1, 2*max_lag + 1);
+  for k = -max_lag:max_lag
+    % Define the overlapping segments
+    if k >= 0
+        seg1 = waveform(1:n-k);
+        seg2 = waveform(k+1:n);
+    else
+        seg1 = waveform(-k+1:n);
+        seg2 = waveform(1:n+k);
+    end
+    rx_time(k+max_lag+1) = sum(seg1 .* seg2) / length(seg1);
+  end
+end
+```]
+For each lag value $k$, we multiply the corresponding elements in the overlapping area. We then calculate the mean by summing these products and dividing by the length of the overlap. This overlapping area is represented by seg1 and seg2, whose starting and ending indices are determined based on whether $k$ is positive or negative, as illustrated in @overlap_ex.
+
+#figure(caption: [Visualization of the overlapping area and the starting and ending indices of `seg1` and `seg2` when $k<0$ and $k >= 0$.], image(
+  "./images/explaining/overlaping.png",
+  width: 120%,
+))<overlap_ex>
+
+
+To maintain a clean function-based script the function `plot_time_autocorrelations` was implemented. the function takes a cell array of ensembles calculate the time_autocorr of the first realization of each one then plots them on top of each other for Comparison. Additionally, it calculates the mean of the first waveform and prints them in the top left.
+
+#codeblock[```matlab
+function plot_time_autocorrelations(ensembles)
+    figure; hold on; grid on;
+    % Ordered: Unipolar NRZ, Polar NRZ, Polar RZ
+    names = {'Unipolar NRZ', 'Polar NRZ', 'Polar RZ'};
+    colors = {'k', 'b', 'r'};
+
+    for i = 1:3
+        wv = ensembles{i}(1,:);
+        plot(-32:32, time_autocorr(wv, 32), ...
+            'Color', colors{i}, 'LineWidth', 1.5);
+        stats_text = sprintf('%s: \\mu = %.4f', names{i}, mean(wv));
+        text(0.02, 0.98 - (i-1)*0.06, stats_text, ...
+            'Units', 'normalized', ...
+            'Color', colors{i}, ...
+            'FontSize', 10, ...
+            'FontWeight', 'bold', ...
+            'VerticalAlignment', 'top');
+    end
+    ylabel('Autocorrelation Rx'); legend(names); hold off;
+end
+```]
+
+we can then run the following code to see the results.
+#codeblock[```matlab
+%default ensembles
+ensembles_5h = generate_all_ensembles(control_flags);
+% new ensembles with n_waveforms = 500 (default), n_bit = 100kb
+ensembles_5h_100kb = generate_all_ensembles(control_flags, [], 1e5); 
+
+%Ploting 
 plot_time_autocorrelations(ensembles_5h);
 plot_time_autocorrelations(ensembles_5h_100kb);
 ```]
@@ -450,59 +506,12 @@ plot_time_autocorrelations(ensembles_5h_100kb);
   ],
 )
 
+While similar, the time-based autocorrelation differs from the ensemble $R_x$ in @autocorr.#linebreak()
+#h(1em) However, increasing the number of bits makes it converge to the ensemble $R_x$. @timestat2 shows the calculation for the mean and autocorrelation of a waveform generated with 100 kilobits.
+
 This characterizes the random process as *Ergodic*, meaning that the process statistics can be characterized through a single sufficiently long observation window.
 
-the `time_autocorr` function was implemented throught the following code
 
-#codeblock[```matlab
-function rx_time = time_autocorr(waveform, max_lag)
-  n = length(waveform);
-  rx_time = zeros(1, 2*max_lag + 1);
-  for k = -max_lag:max_lag
-    for k = -max_lag:max_lag
-        % Define the overlapping segments
-        if k >= 0
-            seg1 = waveform(1:n-k);
-            seg2 = waveform(k+1:n);
-        else
-            seg1 = waveform(-k+1:n);
-            seg2 = waveform(1:n+k);
-        end
-        rx_time(k+max_lag+1) = sum(seg1 .* seg2) / length(seg1);
-    end
-  end
-end
-```]
-for each k we multiply the the elements in the overlaping area and then get the mean by suming them and dividing by the length.
-
-the overlaping area is 
-#figure(caption: [Visualization of the overlapping area and the starting and ending indecies of `seg1` and `seg2` when $k<0$ and $k >= 0$.], image(
-  "./images/explaining/overlaping.png",
-  width: 120%,
-))<overlap_ex>
-
-#codeblock[```matlab
-function plot_time_autocorrelations(ensembles)
-    figure; hold on; grid on;
-    % Ordered: Unipolar NRZ, Polar NRZ, Polar RZ
-    names = {'Unipolar NRZ', 'Polar NRZ', 'Polar RZ'};
-    colors = {'k', 'b', 'r'};
-
-    for i = 1:3
-        wv = ensembles{i}(1,:);
-        plot(-32:32, time_autocorr(wv, 32), ...
-            'Color', colors{i}, 'LineWidth', 1.5);
-        stats_text = sprintf('%s: \\mu = %.4f', names{i}, mean(wv));
-        text(0.02, 0.98 - (i-1)*0.06, stats_text, ...
-            'Units', 'normalized', ...
-            'Color', colors{i}, ...
-            'FontSize', 10, ...
-            'FontWeight', 'bold', ...
-            'VerticalAlignment', 'top');
-    end
-    ylabel('Autocorrelation Rx'); legend(names); hold off;
-end
-```]
 #pagebreak()
 == Bandwidth of the Transmitted Signal
 
