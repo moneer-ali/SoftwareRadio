@@ -1,6 +1,6 @@
 #import "lib.typ": academic-document
 #import "@preview/cetz:0.3.1": canvas, draw
-#set page(fill: rgb("#fff"))
+#set page(fill: rgb("#ddd"))
 #show raw: it => {
   set text(size: 1.1em)
   if it.lang == none {
@@ -257,7 +257,7 @@ The statistical mean is the expected value of the random process at each time in
 
 $ m_x (t) = E[x(t)] = 1/N sum_(i=1)^(N) x_i(t) quad #cite(<lec4_s6>) $ <ensemble_mean>
 
-This yields a $1 times 800$ vector — one mean value per time sample. 
+This yields a $1 times 800$ vector — one mean value per time sample.
 
 A function called `plot_means()` was implemented. It takes a cell array of ensembles then calculates the mean and plots it for every ensemble
 
@@ -440,10 +440,13 @@ end
 ```]
 For each lag value $k$, we multiply the corresponding elements in the overlapping area. We then calculate the mean by summing these products and dividing by the length of the overlap. This overlapping area is represented by seg1 and seg2, whose starting and ending indices are determined based on whether $k$ is positive or negative, as illustrated in @overlap_ex.
 
-#figure(caption: [Visualization of the overlapping area and the starting and ending indices of `seg1` and `seg2` when $k<0$ and $k >= 0$.], image(
-  "./images/explaining/overlaping.png",
-  width: 120%,
-))<overlap_ex>
+#figure(
+  caption: [Visualization of the overlapping area and the starting and ending indices of `seg1` and `seg2` when $k<0$ and $k >= 0$.],
+  image(
+    "./images/explaining/overlaping.png",
+    width: 120%,
+  ),
+)<overlap_ex>
 
 
 To maintain a clean function-based script the function `plot_time_autocorrelations` was implemented. the function takes a cell array of ensembles calculate the time_autocorr of the first realization of each one then plots them on top of each other for Comparison. Additionally, it calculates the mean of the first waveform and prints them in the top left.
@@ -476,9 +479,9 @@ we can then run the following code to see the results.
 %default ensembles
 ensembles_5h = generate_all_ensembles(control_flags);
 % new ensembles with n_waveforms = 500 (default), n_bit = 100kb
-ensembles_5h_100kb = generate_all_ensembles(control_flags, [], 1e5); 
+ensembles_5h_100kb = generate_all_ensembles(control_flags, [], 1e5);
 
-%Ploting 
+%Ploting
 plot_time_autocorrelations(ensembles_5h);
 plot_time_autocorrelations(ensembles_5h_100kb);
 ```]
@@ -514,22 +517,23 @@ This characterizes the random process as *Ergodic*, meaning that the process sta
 
 As established in section 4.2, the considered processes are wide-sense stationary (WSS). Consequently, their power spectral density (PSD) is defined as the Fourier transform of the autocorrelation function.
 $ S_X (f) = cal(F.T.){R_X (tau)} quad #cite(<lec4_s16>) $
-In practice, the autocorrelation function is available only for a finite number of discrete lags, sampled with a period $T_S$. Therefore, the continuous Fourier transform is approximated using the discrete Fourier transform (DFT), which is efficiently computed via the Fast Fourier Transform (FFT). 
+In practice, the autocorrelation function is available only for a finite number of discrete lags, sampled with a period $T_S$. Therefore, the continuous Fourier transform is approximated using the discrete Fourier transform (DFT), which is efficiently computed via the Fast Fourier Transform (FFT).
 The PSD is computed for each line coding scheme using this approach, and the frequency axis is scaled according to the sampling period $T_S = 10 \ms$ The resulting spectra are shown in @psd.
- 
+
 #figure(
-  caption: [Normalized PSD for each line code. The spectrum is obtained via FFT of the autocorrelation function ($R_x$) limited to $ plus.minus 32$ lags (Left), $plus.minus 788$ (Right)],
+  caption: [Normalized PSD for each line code. The spectrum is obtained via FFT of the autocorrelation function ($R_x$) limited to $plus.minus 32$ lags (Left), $plus.minus 788$ (Right)],
   grid(
-    columns: (1fr, 1fr), // Two columns of equal fractional width
-    gutter: 1em,         // Space between the images
-    image("images/PSD.png", width: 100%),
-    image("images/PSD_798_samples.png", width: 100%),
-  )
+    columns: (1fr, 1fr),
+    // Two columns of equal fractional width
+    gutter: 1em,
+    // Space between the images
+    image("images/PSD.png", width: 100%), image("images/PSD_798_samples.png", width: 100%),
+  ),
 )<psd>
 
 The left plot corresponds to an autocorrelation window of ±32 lags, while the right plot uses a much larger window (±788 lags). It can be observed that the PSD obtained using the shorter window is smoother and more stable, whereas the longer window introduces noticeable fluctuations.
 
- This behavior is due to the reduced reliability of autocorrelation estimates at larger lags, where fewer samples contribute to the averaging process, resulting in increased noise in the PSD. Therefore, limiting the autocorrelation to ±32 lags provides a good balance between capturing the essential spectral characteristics and maintaining numerical stability.
+This behavior is due to the reduced reliability of autocorrelation estimates at larger lags, where fewer samples contribute to the averaging process, resulting in increased noise in the PSD. Therefore, limiting the autocorrelation to ±32 lags provides a good balance between capturing the essential spectral characteristics and maintaining numerical stability.
 
 The bandwidth is defined as the frequency of the first spectral null. In practice, due to finite-length autocorrelation and numerical estimation effects, the PSD does not reach an exact zero at the null locations. Therefore, the first null is identified as the first local minimum after the main lobe, which provides a reliable estimate of the baseband bandwidth as shown in @psd (Left).
 
@@ -558,13 +562,13 @@ Analytically, the $S_x (f)$ is given as a $sinc^2()$ function for each encoding 
 % Introduction to Communication Systems
 % Project 2
 % Team 11
-% Submitted to Eng. Mohammed Khaled 
+% Submitted to Eng. Mohammed Khaled
 %
-% Description: 
-% This script generates, visualizes, and analyzes WSS random processes 
+% Description:
+% This script generates, visualizes, and analyzes WSS random processes
 % using Unipolar NRZ, Polar NRZ, and Polar RZ line codes.
 %
-% NOTE: Please run this script section by section (using 'Run Section') 
+% NOTE: Please run this script section by section (using 'Run Section')
 %       to avoid triggering a fountain of plots all at once.
 % =========================================================================
 
@@ -616,7 +620,7 @@ function ensembles = generate_all_ensembles(control_flags, n_waveforms, n_bits, 
     ens_uz = generate_ensemble(@unipolar_nrz, control_flags, n_waveforms, n_bits, A, spb);
     ens_pz = generate_ensemble(@polar_nrz, control_flags, n_waveforms, n_bits, A, spb);
     ens_rz = generate_ensemble(@polar_rz, control_flags, n_waveforms, n_bits, A, spb);
-    
+
     ensembles = {ens_uz, ens_pz, ens_rz};
 end
 function ensemble = generate_ensemble(line_code_func, control_flags, n_waveforms, n_bits, A, spb)
@@ -625,15 +629,15 @@ function ensemble = generate_ensemble(line_code_func, control_flags, n_waveforms
     if nargin < 5 || isempty(A), A = control_flags.A; end
     if nargin < 4 || isempty(n_bits), n_bits = control_flags.n_bits; end
     if nargin < 3 || isempty(n_waveforms), n_waveforms = control_flags.n_waveforms; end
-    
+
     % Direct allocation for memory efficiency
     waveform_length = n_bits * spb;
     ensemble = zeros(n_waveforms, waveform_length);
-    
+
     for i = 1:n_waveforms
         random_bit_stream = randi([0 1], 1, n_bits);
         raw_wf = line_code_func(random_bit_stream, A, spb);
-        
+
         % Apply random phase by circular shift and store directly in matrix
         phase = randi([0, spb-1]);
         ensemble(i, :) = circshift(raw_wf, [0, -phase]);
@@ -653,16 +657,16 @@ function waveform = polar_rz(bits, A, spb)
     half_spb = floor(spb / 2);
     levels = (2*bits(:)' - 1) * A;
     raw_matrix = repmat(levels, spb, 1);
-    
+
     % Zero out the second half of each bit period to make it Return-to-Zero
-    raw_matrix(half_spb+1:end, :) = 0; 
-    
+    raw_matrix(half_spb+1:end, :) = 0;
+
     waveform = reshape(raw_matrix, 1, []);
 end
 
 % Analysis Functions
 function rx = ensemble_autocorr(ensemble, max_lag, t_start)
-    if nargin < 3 || isempty(t_start), t_start = 1; end 
+    if nargin < 3 || isempty(t_start), t_start = 1; end
     sub = ensemble(:, t_start:end);
     [~, n_samples] = size(sub);
     rx = zeros(1, 2*max_lag+1);
@@ -699,21 +703,21 @@ function plot_sample_waveforms(ensembles, control_flags, n_show, samples_to_show
     % Default arguments
     if nargin < 3 || isempty(n_show), n_show = 5; end
     if nargin < 4 || isempty(samples_to_show), samples_to_show = 240; end
-    
+
     names = {'Unipolar NRZ', 'Polar NRZ', 'Polar RZ'};
     num_line_codes = length(ensembles);
-    
+
     % Create a large figure to fit the grid
     figure('Name', 'Sample Waveforms');
-    
+
     for lc_idx = 1:num_line_codes
         current_ens = ensembles{lc_idx};
         % Ensure we don't try to show more waveforms/samples than exist
         n = min(n_show, size(current_ens, 1));
         max_samples = min(samples_to_show, size(current_ens, 2));
-        
-        y_limits = [-control_flags.A-1, control_flags.A+1]; % Find y-limits 
-        
+
+        y_limits = [-control_flags.A-1, control_flags.A+1]; % Find y-limits
+
         for wf_idx = 1:n
             subplot_idx = (wf_idx - 1) * num_line_codes + lc_idx;
             subplot(n, num_line_codes, subplot_idx);
@@ -722,13 +726,13 @@ function plot_sample_waveforms(ensembles, control_flags, n_show, samples_to_show
                 'LineWidth', 1.5, ...
                 'Color', '#0072BD');
             ylim(y_limits);
-            grid on;     
+            grid on;
             % Add column titles only on the top row
             if wf_idx == 1
                 title(names{lc_idx} ...
                     , 'FontWeight', 'bold', ...
                     'FontSize', 11);
-            end         
+            end
             % Add X-axis labels only on the bottom row
             if wf_idx == n
                 xlabel('Sample Index');
@@ -739,9 +743,9 @@ end
 function plot_means(ensembles)
     % Ordered: Unipolar NRZ, Polar NRZ, Polar RZ
     names = {'Unipolar NRZ', 'Polar NRZ', 'Polar RZ'};
-    colors = {'k', 'r', 'b'}; 
+    colors = {'k', 'r', 'b'};
     n_waveforms = size(ensembles{1}, 1);
-    
+
     figure; hold on;
     for i = 1:length(ensembles)
         current_ens = ensembles{i};
@@ -749,7 +753,7 @@ function plot_means(ensembles)
 
         average = sum(ens_mean)/length(ens_mean);
         variance = var(ens_mean);
-        
+
         plot(ens_mean, 'Color', colors{i}, 'LineWidth', 1.5, 'DisplayName', names{i});
         stats_text = sprintf('%s: \\mu = %.4f, \\sigma^2 = %.4e', names{i}, average, variance);
         text(0.02, 0.98 - (i-1)*0.06, stats_text, 'Units', 'normalized', ...
@@ -763,10 +767,10 @@ function plot_time_autocorrelations(ensembles)
     figure; hold on; grid on;
     % Ordered: Unipolar NRZ, Polar NRZ, Polar RZ
     names = {'Unipolar NRZ', 'Polar NRZ', 'Polar RZ'};
-    colors = {'k', 'r', 'b'}; 
-    
+    colors = {'k', 'r', 'b'};
+
     for i = 1:3
-        wv = ensembles{i}(1,:); 
+        wv = ensembles{i}(1,:);
         plot(-32:32, time_autocorr(wv, 32), ...
             'Color', colors{i}, 'LineWidth', 1.5);
         stats_text = sprintf('%s: \\mu = %.4f', names{i}, sum(wv)/length(wv));
@@ -783,35 +787,35 @@ function plot_ensemble_autocorr(ensemble, name , max_lag, start_times)
     % Set default values if arguments are missing
     if nargin < 3 || isempty(max_lag), max_lag = 16; end
     if nargin < 4 || isempty(start_times), start_times = [1, 101, 354]; end
-    
+
     % Create the lag vector for the x-axis
     lags = -max_lag:max_lag;
     num_starts = length(start_times);
-    
+
     % Initialize the figure window and automatically center it
     fig = figure('Name', name);
-    
+
     % Pre-define a color palette to cycle through
     colors = {'b', 'r', 'g', 'm', 'c', 'k'};
-    
+
     for i = 1:num_starts
         t_start = start_times(i);
-        
+
         % Calculate autocorrelation anchored at this specific starting time
         rx = ensemble_autocorr(ensemble, max_lag, t_start);
-        
+
         % Create subplot stacked vertically
         subplot(num_starts, 1, i);
-        
+
         % Pick a color, looping back to the start if num_starts > length(colors)
         c_idx = mod(i - 1, length(colors)) + 1;
-        
+
         % Plot the data
         plot(lags, rx, 'Color', colors{c_idx}, 'LineWidth', 2);
         ylabel('R_x', 'FontWeight', 'bold');
         title(sprintf('Starting Time t_0 = %d', t_start - 1));
         grid on;
-        
+
         % Only add the X-label to the very bottom subplot for cleaner visuals
         if i == num_starts
             xlabel('Lag', 'FontWeight', 'bold');
@@ -821,17 +825,17 @@ end
 
 function plot_psd_from_ensembles(ensembles, control_flags, sample_period)
     if nargin < 3 || isempty(sample_period)
-        sample_period = control_flags.sample_period; 
+        sample_period = control_flags.sample_period;
     end
-    max_lag = 32; 
+    max_lag = 32;
     N = 2 * max_lag + 1;
     fs = 1 / sample_period;
     freq_axis = (-(N-1)/2:(N-1)/2) * (fs / N);
-    
+
     % Ordered: Unipolar NRZ, Polar NRZ, Polar RZ
     names = {'Unipolar NRZ', 'Polar NRZ', 'Polar RZ'};
-    colors = {'k', 'r', 'b'}; 
-    
+    colors = {'k', 'r', 'b'};
+
     figure; hold on; grid on;
     p = zeros(1, 3);
     for i = 1:3
